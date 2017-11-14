@@ -1,6 +1,5 @@
 package com.tongbanjie.raft.core.log.store.impl;
 
-import com.tongbanjie.raft.core.config.RaftConfig;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.store.DataStore;
 import org.slf4j.Logger;
@@ -30,6 +29,7 @@ public class DefaultDataStore implements DataStore {
         this.storeFile = storeFile;
 
         this.createStorePath();
+        this.createStoreFile();
         try {
             this.fileOutputStream = new FileOutputStream(this.storePath + "/" + this.storeFile, true);
         } catch (FileNotFoundException e) {
@@ -37,6 +37,9 @@ public class DefaultDataStore implements DataStore {
         }
     }
 
+    /**
+     * 创建日志存储路径
+     */
     private void createStorePath() {
 
         File path = new File(this.storePath);
@@ -54,7 +57,9 @@ public class DefaultDataStore implements DataStore {
 
 
     /**
+     * 创建日志存储文件
      *
+     * @notice 如: .raft
      */
     private void createStoreFile() {
 
@@ -122,7 +127,9 @@ public class DefaultDataStore implements DataStore {
     }
 
     /**
-     * @param data
+     * 将raft日志持久化
+     *
+     * @param data 日志数据
      * @return
      */
     public boolean writeToStore(byte[] data) {
