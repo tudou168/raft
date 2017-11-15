@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.log.codec.impl;
+package com.tongbanjie.raft.core.log.codec.support;
 
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.RaftLog;

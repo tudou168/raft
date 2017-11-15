@@ -21,6 +21,16 @@ public class RaftLog {
     private byte[] content;
 
 
+    public RaftLog() {
+
+    }
+
+    public RaftLog(long index, long term, byte[] content) {
+        this.index = index;
+        this.term = term;
+        this.content = content;
+    }
+
     public long getIndex() {
         return index;
     }
@@ -43,6 +53,12 @@ public class RaftLog {
 
     public void setContent(byte[] content) {
         this.content = content;
+    }
+
+
+    public RaftLog createCopy() {
+
+        return new RaftLog(this.index, this.term, this.content);
     }
 
     @Override

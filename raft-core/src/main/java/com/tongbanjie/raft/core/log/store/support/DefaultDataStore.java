@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.log.store.impl;
+package com.tongbanjie.raft.core.log.store.support;
 
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.store.DataStore;

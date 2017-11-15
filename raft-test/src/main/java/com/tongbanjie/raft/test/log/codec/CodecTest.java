@@ -2,15 +2,14 @@ package com.tongbanjie.raft.test.log.codec;
 
 import com.tongbanjie.raft.core.log.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
-import com.tongbanjie.raft.core.log.codec.impl.Crc32RaftLogCodec;
+import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.log.store.DataStore;
-import com.tongbanjie.raft.core.log.store.impl.DefaultDataStore;
+import com.tongbanjie.raft.core.log.store.support.DefaultDataStore;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /***
