@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
@@ -33,7 +33,7 @@ public class DefaultRaftLogManage implements RaftLogManage {
     private RaftLogCodec codec;
 
     //  raft 日志列表
-    private CopyOnWriteArrayList<RaftLog> raftLogs;
+    private List<RaftLog> raftLogs;
 
     private int committedPos = -1;
 
@@ -41,7 +41,7 @@ public class DefaultRaftLogManage implements RaftLogManage {
     public DefaultRaftLogManage(DataStore dataStore, RaftLogCodec codec) {
         this.dataStore = dataStore;
         this.codec = codec;
-        raftLogs = new CopyOnWriteArrayList<RaftLog>();
+        this.raftLogs = new ArrayList<RaftLog>();
         //  执行日志恢复
         this.recover();
     }
@@ -217,10 +217,10 @@ public class DefaultRaftLogManage implements RaftLogManage {
 
 
             if (pos > this.raftLogs.size()) {
-                return new CopyOnWriteArrayList<RaftLog>();
+                return new ArrayList<RaftLog>();
             }
 
-            List<RaftLog> logs = new CopyOnWriteArrayList<RaftLog>();
+            List<RaftLog> logs = new ArrayList<RaftLog>();
             for (; pos < this.raftLogs.size(); pos++) {
                 logs.add(raftLogs.get(pos).createCopy());
             }
@@ -299,6 +299,7 @@ public class DefaultRaftLogManage implements RaftLogManage {
 
                 return true;
             }
+            this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);
 
 
         } finally {
@@ -310,12 +311,63 @@ public class DefaultRaftLogManage implements RaftLogManage {
 
     /**
      * 提交 raft 日志存储
+     * 根据给定的日志索引号 将未提交的日志提交(存储到)对应的索引号的位置
      *
      * @param commitIndex 提交到指定的日志 index
      * @return
      */
     public boolean commitToIndex(long commitIndex) {
-        return false;
+
+        this.lock.lock();
+
+        try {
+
+            long lastCommittedIndex = this.getLastCommittedIndex();
+            // 如果当前已经提交的索引号不大于当前要提交的索引号
+            if (commitIndex <= lastCommittedIndex) {
+                // ignore 忽略
+                return true;
+            }
+
+            // 判断提交的索引号是否大于目前未提交日志的最大索引号
+            long lastIndex = this.getLastIndex();
+            if (commitIndex > lastIndex) {
+                throw new RaftException(String.format("commit index:%s > last index:%s error!", commitIndex, lastCommittedIndex));
+            }
+
+
+            // 循环提交
+            int pos = this.committedPos + 1;
+            while (true) {
+
+                if (pos >= this.raftLogs.size()) {
+                    break;
+                }
+                if (this.raftLogs.get(pos).getIndex() > commitIndex) {
+                    break;
+                }
+
+                //  写入存储 raft 日志
+                byte[] body = this.codec.encode(this.raftLogs.get(pos));
+                this.dataStore.writeToStore(body);
+
+                this.committedPos = pos;
+
+                if (this.raftLogs.get(pos).getIndex() == commitIndex) {
+                    break;
+                }
+
+                pos++;
+
+
+            }
+
+            return true;
+
+
+        } finally {
+            this.lock.unlock();
+        }
     }
 
 
