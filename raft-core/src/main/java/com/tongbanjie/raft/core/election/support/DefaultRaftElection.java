@@ -10,7 +10,7 @@ import com.tongbanjie.raft.core.peer.RaftPeer;
  * @author banxia
  * @date 2017-11-15 20:20:31
  */
-public class RaftElectionWithTimeout implements RaftElection {
+public class DefaultRaftElection implements RaftElection {
 
 
     public void electionVoteRequest(RaftPeer raftPeer, ElectionVoteRequest request, ElectionVoteResponseHandler handler) {
