@@ -1,5 +1,8 @@
 package com.tongbanjie.raft.core.peer;
 
+import com.tongbanjie.raft.core.election.ElectionVoteRequest;
+import com.tongbanjie.raft.core.election.ElectionVoteResponse;
+
 /***
  *
  * @author banxia
@@ -8,4 +11,7 @@ package com.tongbanjie.raft.core.peer;
 public interface RaftPeer {
 
     String getId();
+
+    //  发起选举投票请求
+    ElectionVoteResponse electionVote(ElectionVoteRequest request);
 }
