@@ -18,14 +18,18 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
 
     /***
      * 编码格式:
-     *          crc32(8位) + index(8位) + term(8位) + body_length(8)位 + body
+     *       ---------------------------------------------
+     *		| uint64 | uint64 | uint64 | uint32 | []byte  |
+     *		 ---------------------------------------------
+     *		| CRC    | TERM   | INDEX  | SIZE   | CONTENT |
+     *		 ---------------------------------------------
      * @param raftLog raft 日志实体
      * @return
      */
     public byte[] encode(RaftLog raftLog) {
 
         byte[] content = raftLog.getContent();
-        byte[] header = new byte[24];
+        byte[] header = new byte[20];
         int offset = 0;
         // index
         ByteUtil.long2bytes(raftLog.getIndex(), header, offset);
@@ -40,31 +44,39 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
 
         //body
 
-        byte[] body = new byte[header.length + content.length + 8];
+        byte[] body = new byte[header.length + content.length];
 
 
-        System.arraycopy(header, 0, body, 8, header.length);
+        System.arraycopy(header, 0, body, 0, header.length);
 
-        System.arraycopy(content, 0, body, header.length + 8, content.length);
+        System.arraycopy(content, 0, body, header.length, content.length);
 
 
         CRC32 crc32 = new CRC32();
         crc32.update(body);
 
         long crc = crc32.getValue();
-        ByteUtil.long2bytes(crc, body, 0);
-        return body;
+
+        byte[] result = new byte[body.length + 8];
+        System.arraycopy(body, 0, result, 8, body.length);
+        ByteUtil.long2bytes(crc, result, 0);
+        return result;
     }
 
     /**
      * 解码
+     * 格式:
+     * ---------------------------------------------
+     * | uint64 | uint64 | uint64 | uint32 | []byte  |
+     * ---------------------------------------------
+     * | CRC    | TERM   | INDEX  | SIZE   | CONTENT |
      *
      * @param buffer
      * @return
      */
     public RaftLog decode(ByteBuffer buffer) {
 
-        byte[] header = new byte[32];
+        byte[] header = new byte[28];
 
         buffer.get(header);
         int offset = 0;
@@ -82,14 +94,14 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
         offset += 4;
 
         if (buffer.remaining() < length) {
-            throw new RaftException("decode  log data error! reason the body is not right");
+            throw new RaftException("decode  log data error: the body is not right");
         }
 
         //   content
         byte[] content = new byte[length];
         buffer.get(content);
 
-        byte[] body = new byte[content.length + 24];
+        byte[] body = new byte[content.length + header.length - 8];
 
         System.arraycopy(header, 8, body, 0, header.length - 8);
         System.arraycopy(content, 0, body, header.length - 8, content.length);
