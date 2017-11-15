@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 
 /***
- *默认日志存储实现
+ *  默认日志存储实现
  * @author banxia
  * @date 2017-11-14 17:17:52
  */
@@ -137,6 +137,7 @@ public class DefaultDataStore implements DataStore {
         try {
 
             this.fileOutputStream.write(data);
+            this.fileOutputStream.flush();
             return true;
         } catch (Exception e) {
 
