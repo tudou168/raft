@@ -1,7 +1,8 @@
 package com.tongbanjie.raft.core.peer;
 
-import com.tongbanjie.raft.core.election.ElectionVoteRequest;
-import com.tongbanjie.raft.core.election.ElectionVoteResponse;
+
+import com.tongbanjie.raft.core.protocol.ElectionRequest;
+import com.tongbanjie.raft.core.protocol.ElectionResponse;
 
 /***
  *
@@ -13,5 +14,5 @@ public interface RaftPeer {
     String getId();
 
     //  发起选举投票请求
-    ElectionVoteResponse electionVote(ElectionVoteRequest request);
+    ElectionResponse electionVote(ElectionRequest request);
 }

@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.test.log.codec;
 
-import com.tongbanjie.raft.core.log.RaftLog;
+import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.log.store.DataStore;

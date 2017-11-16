@@ -1,8 +1,8 @@
 package com.tongbanjie.raft.core.peer.support;
 
-import com.tongbanjie.raft.core.election.ElectionVoteRequest;
-import com.tongbanjie.raft.core.election.ElectionVoteResponse;
 import com.tongbanjie.raft.core.peer.RaftPeer;
+import com.tongbanjie.raft.core.protocol.ElectionRequest;
+import com.tongbanjie.raft.core.protocol.ElectionResponse;
 
 /***
  * 基于rpc方式的 raft peer
@@ -20,7 +20,7 @@ public class RpcRaftPeer implements RaftPeer {
      * @param request 投票选举请求体
      * @return 投票选举响应实体
      */
-    public ElectionVoteResponse electionVote(ElectionVoteRequest request) {
+    public ElectionResponse electionVote(ElectionRequest request) {
         return null;
     }
 }

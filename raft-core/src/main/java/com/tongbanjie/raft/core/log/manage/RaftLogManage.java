@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.core.log.manage;
 
-import com.tongbanjie.raft.core.log.RaftLog;
+import com.tongbanjie.raft.core.protocol.RaftLog;
 
 import java.util.List;
 

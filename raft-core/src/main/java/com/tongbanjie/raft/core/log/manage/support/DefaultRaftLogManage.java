@@ -1,7 +1,7 @@
 package com.tongbanjie.raft.core.log.manage.support;
 
 import com.tongbanjie.raft.core.exception.RaftException;
-import com.tongbanjie.raft.core.log.RaftLog;
+import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.RaftLogManage;
 import com.tongbanjie.raft.core.log.store.DataStore;

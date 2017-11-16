@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.test.log.manage;
 
-import com.tongbanjie.raft.core.log.RaftLog;
+import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.test.log.BaseTest;
 import org.junit.Test;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.election;
+package com.tongbanjie.raft.core.protocol;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author banxia
  * @date 2017-11-15 19:19:46
  */
-public class ElectionVoteRequest implements Serializable {
+public class ElectionRequest implements Serializable {
 
 
     //  当前任期

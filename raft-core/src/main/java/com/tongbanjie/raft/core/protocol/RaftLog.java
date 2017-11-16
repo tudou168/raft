@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.log;
+package com.tongbanjie.raft.core.protocol;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
