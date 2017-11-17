@@ -69,6 +69,10 @@ public class RaftEngine {
     //  任务执行线程池
     private ExecutorService executorService;
 
+    //  日志刷新调度线程
+    private ScheduledExecutorService refreshScheduledExecutorService;
+
+
     // 任务调度线程池
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -77,6 +81,9 @@ public class RaftEngine {
 
     //  心跳调度器
     private ScheduledFuture heartbeatScheduledFuture;
+
+    //  日志并发刷新调度器
+    private ScheduledFuture refreshScheduledFuture;
 
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -136,6 +143,7 @@ public class RaftEngine {
         this.term = this.logService.getLastTerm();
         this.commitIndex = this.logService.getLastCommittedIndex();
         this.executorService = new ThreadPoolExecutor(RaftConstant.raftThreadNum, RaftConstant.raftThreadNum, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        this.refreshScheduledExecutorService = Executors.newScheduledThreadPool(2);
         this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
         this.resetElectionTimeoutTimer();
 
@@ -226,6 +234,7 @@ public class RaftEngine {
 
     }
 
+
     /**
      * 停止选举超时定时器
      */
@@ -266,6 +275,37 @@ public class RaftEngine {
 
     }
 
+
+    /**
+     * 重置并发刷新日志定时器
+     */
+    private void resetRefreshScheduledTimer() {
+
+        if (this.refreshScheduledFuture != null && !this.refreshScheduledFuture.isDone()) {
+            this.refreshScheduledFuture.cancel(true);
+        }
+
+        this.refreshScheduledFuture = this.refreshScheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                log.info(String.format("%s>>>>>>>>>>>>>>>>>>>>>>>>>执行日志刷新<<<<<<<<<<<<<<<<<<<<<<<", getId()));
+                //TODO
+            }
+        }, getBroadcastInterval(), getBroadcastInterval(), TimeUnit.MILLISECONDS);
+
+    }
+
+
+    /**
+     * 停止并发刷新日志定时器
+     */
+    private void stopRefreshScheduledTimer() {
+
+        if (this.refreshScheduledFuture != null && !this.refreshScheduledFuture.isDone()) {
+            this.refreshScheduledFuture.cancel(true);
+        }
+
+    }
+
     /**
      * 选举超时时间(毫秒)
      *
@@ -274,6 +314,17 @@ public class RaftEngine {
     private int getElectionTimeoutMS() {
 
         return RaftConstant.electionTimeoutMs + random.nextInt(RaftConstant.electionTimeoutMs);
+    }
+
+
+    /**
+     * 广播时间间隔
+     *
+     * @return
+     */
+    private int getBroadcastInterval() {
+
+        return RaftConstant.electionTimeoutMs / 10;
     }
 
 
@@ -366,6 +417,9 @@ public class RaftEngine {
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
             log.info(String.format("%s start send heartbeat .....", getId()));
+            log.info(String.format("%s start refresh log schedule timer .....", getId()));
+
+            resetRefreshScheduledTimer();
 
         }
     }
