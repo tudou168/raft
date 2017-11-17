@@ -161,11 +161,12 @@ public class RaftEngine {
 
         try {
 
-            log.info(String.format("%s start Election...", getId()));
+
             this.state = RaftConstant.candidate;
             this.voteFor = this.id;
             this.leader = noLeader;
             this.term++;
+            log.info(String.format("%s start Election with term=%s...", getId(), this.term));
 
         } finally {
 
@@ -287,7 +288,7 @@ public class RaftEngine {
 
         this.refreshScheduledFuture = this.refreshScheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                log.info(String.format("%s>>>>>>>>>>>>>>>>>>>>>>>>>执行日志刷新<<<<<<<<<<<<<<<<<<<<<<<", getId()));
+                log.info(String.format("%s>>>>>>>>>>>>>>>>>>>>>>>>>执行并发日志刷新<<<<<<<<<<<<<<<<<<<<<<<", getId()));
                 //TODO
             }
         }, getBroadcastInterval(), getBroadcastInterval(), TimeUnit.MILLISECONDS);
