@@ -3,7 +3,7 @@ package com.tongbanjie.raft.core.log.manage.support;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
-import com.tongbanjie.raft.core.log.manage.RaftLogManage;
+import com.tongbanjie.raft.core.log.manage.RaftLogService;
 import com.tongbanjie.raft.core.log.store.DataStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +21,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author banxia
  * @date 2017-11-15 10:10:37
  */
-public class DefaultRaftLogManage implements RaftLogManage {
+public class DefaultRaftLogService implements RaftLogService {
 
-    private final static Logger log = LoggerFactory.getLogger(DefaultRaftLogManage.class);
+    private final static Logger log = LoggerFactory.getLogger(DefaultRaftLogService.class);
 
     private Lock lock = new ReentrantLock();
     //  数据存储
@@ -38,7 +38,7 @@ public class DefaultRaftLogManage implements RaftLogManage {
     private int committedPos = -1;
 
 
-    public DefaultRaftLogManage(DataStore dataStore, RaftLogCodec codec) {
+    public DefaultRaftLogService(DataStore dataStore, RaftLogCodec codec) {
         this.dataStore = dataStore;
         this.codec = codec;
         this.raftLogs = new ArrayList<RaftLog>();

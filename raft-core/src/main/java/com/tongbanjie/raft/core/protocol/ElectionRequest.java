@@ -14,7 +14,7 @@ public class ElectionRequest implements Serializable {
 
 
     //  当前任期
-    private String term;
+    private long term;
     //  候选人 id
     private String candidateId;
 
@@ -25,11 +25,11 @@ public class ElectionRequest implements Serializable {
     private long lastLogTerm;
 
 
-    public String getTerm() {
+    public long getTerm() {
         return term;
     }
 
-    public void setTerm(String term) {
+    public void setTerm(long term) {
         this.term = term;
     }
 

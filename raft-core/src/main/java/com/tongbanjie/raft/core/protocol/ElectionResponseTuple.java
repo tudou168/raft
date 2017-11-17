@@ -14,7 +14,17 @@ public class ElectionResponseTuple implements Serializable {
 
     private ElectionResponse electionResponse;
 
+    private String id;
+
     private boolean success;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public ElectionResponse getElectionResponse() {
         return electionResponse;

@@ -9,7 +9,7 @@ import java.util.List;
  * @author banxia
  * @date 2017-11-15 10:10:16
  */
-public interface RaftLogManage {
+public interface RaftLogService {
 
 
     /**

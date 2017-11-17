@@ -11,6 +11,7 @@ import com.tongbanjie.raft.core.protocol.ElectionResponse;
  */
 public interface RaftPeer {
 
+
     String getId();
 
     //  发起选举投票请求

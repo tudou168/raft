@@ -1,5 +1,8 @@
 package com.tongbanjie.raft.core.election.handler;
 
+import com.tongbanjie.raft.core.peer.RaftPeer;
+import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
+
 /***
  *
  * @author banxia
@@ -8,4 +11,5 @@ package com.tongbanjie.raft.core.election.handler;
 public interface ElectionResponseHandler {
 
 
+    void handler(RaftPeer raftPeer, ElectionResponseTuple tuple);
 }

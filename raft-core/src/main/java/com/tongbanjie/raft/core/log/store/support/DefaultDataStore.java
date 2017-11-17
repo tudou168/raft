@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.log.store.support;
 
+import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.store.DataStore;
 import org.slf4j.Logger;
@@ -18,10 +19,14 @@ public class DefaultDataStore implements DataStore {
     private final static Logger log = LoggerFactory.getLogger(DefaultDataStore.class);
 
 
-    private String storePath;
-    private String storeFile;
+    private String storePath = RaftConstant.dataStorePath;
+    private String storeFile = RaftConstant.dataStoreFile;
     private FileOutputStream fileOutputStream;
 
+    public DefaultDataStore() {
+
+        this(RaftConstant.dataStorePath, RaftConstant.dataStoreFile);
+    }
 
     public DefaultDataStore(String storePath, String storeFile) {
 

@@ -24,11 +24,11 @@ public class RaftManageTest extends BaseTest {
      */
     @Test
     public void initTest() {
-        log.info(raftLogManage.getRaftLogList().toString());
+        log.info(raftLogService.getRaftLogList().toString());
 
         long index = 1;
         long term = 1;
-        boolean contains = this.raftLogManage.contains(index, term);
+        boolean contains = this.raftLogService.contains(index, term);
         log.info(String.format(">>>>>>>>>>是否包含有 index:%s,term:%s,:%s", index, term, contains));
 
         // append wrong log
@@ -36,7 +36,7 @@ public class RaftManageTest extends BaseTest {
         RaftLog raftLog = new RaftLog(-1, 1, "错误的内容".getBytes());
         try {
 
-            raftLogManage.appendRaftLog(raftLog.createCopy());
+            raftLogService.appendRaftLog(raftLog.createCopy());
         } catch (Exception e) {
             log.error(">>>>>>>>>>追加日志失败:", e);
         }
@@ -62,11 +62,11 @@ public class RaftManageTest extends BaseTest {
      * 提交日志
      */
     private void commitRaftLog() {
-        long lastIndex = this.raftLogManage.getLastIndex();
+        long lastIndex = this.raftLogService.getLastIndex();
         log.info(">>>>>>>>>>>开始提交日志<<<<<<<<<<<<<<<<<<");
         long commitIndex = lastIndex - 1;
-        this.raftLogManage.commitToIndex(commitIndex);
-        log.info(String.format(">>>>>>>>>>>raft log commitIndex:%s, last index:%s", raftLogManage.getLastCommittedIndex(), raftLogManage.getLastIndex()));
+        this.raftLogService.commitToIndex(commitIndex);
+        log.info(String.format(">>>>>>>>>>>raft log commitIndex:%s, last index:%s", raftLogService.getLastCommittedIndex(), raftLogService.getLastIndex()));
     }
 
     /**
@@ -76,62 +76,62 @@ public class RaftManageTest extends BaseTest {
      */
     private void appendRaftLog(RaftLog raftLog) {
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
-        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
-
-
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
-        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
-
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
-        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
-
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
 
-        raftLog.setIndex(raftLogManage.getLastIndex() + 1);
-        raftLog.setTerm(raftLogManage.getLastTerm());
-        raftLogManage.appendRaftLog(raftLog.createCopy());
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
+        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
+
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
+        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
+
+
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
+        log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
+
+        raftLog.setIndex(raftLogService.getLastIndex() + 1);
+        raftLog.setTerm(raftLogService.getLastTerm());
+        raftLogService.appendRaftLog(raftLog.createCopy());
         log.info(String.format(">>>>>>>>>>日志%s 追加成功", raftLog));
     }
 
@@ -141,8 +141,8 @@ public class RaftManageTest extends BaseTest {
      * @return
      */
     private List<RaftLog> getFromIndex() {
-        long fromIndex = raftLogManage.getLastIndex() - 5;
-        List<RaftLog> raftLogListFromIndex = raftLogManage.getRaftLogListFromIndex(fromIndex);
+        long fromIndex = raftLogService.getLastIndex() - 5;
+        List<RaftLog> raftLogListFromIndex = raftLogService.getRaftLogListFromIndex(fromIndex);
         log.info(String.format(">>>>>>>>>>fromIndex=%s, raft logs:%s", fromIndex, raftLogListFromIndex));
         return raftLogListFromIndex;
     }
@@ -155,9 +155,9 @@ public class RaftManageTest extends BaseTest {
     private void truncateRaftLog(List<RaftLog> raftLogListFromIndex) {
         long idx = raftLogListFromIndex.get(0).getIndex();
         long tem = raftLogListFromIndex.get(0).getTerm();
-        raftLogManage.truncateRaftLog(idx, tem);
+        raftLogService.truncateRaftLog(idx, tem);
 
-        log.info(String.format(">>>>>>>>>>raft logs %s ,size %s", raftLogManage.getRaftLogList(), raftLogManage.getRaftLogList().size()));
+        log.info(String.format(">>>>>>>>>>raft logs %s ,size %s", raftLogService.getRaftLogList(), raftLogService.getRaftLogList().size()));
     }
 
 
