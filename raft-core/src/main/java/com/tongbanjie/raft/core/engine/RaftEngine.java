@@ -281,6 +281,7 @@ public class RaftEngine {
         } catch (InterruptedException e) {
             e.printStackTrace();
             log.error(e.getMessage(), e);
+            return false;
         } finally {
             this.lock.writeLock().unlock();
             this.startStatistic = false;

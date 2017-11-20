@@ -2,7 +2,6 @@ package com.tongbanjie.raft.core.engine;
 
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.peer.RaftPeer;
-import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
 
 import java.util.HashMap;
 import java.util.List;
