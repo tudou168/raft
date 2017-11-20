@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -91,6 +92,8 @@ public class RaftEngine {
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    private Condition waitForDoneCondition = lock.readLock().newCondition();
+
     private SecureRandom random = new SecureRandom();
 
     //  用于保存各个 peer 刷新的索引号
@@ -98,6 +101,14 @@ public class RaftEngine {
 
     //  投票列表
     private ConcurrentHashMap<String, Boolean> votes = new ConcurrentHashMap<String, Boolean>();
+
+    /***
+     *  统计并发刷新日志状态
+     */
+    private ConcurrentHashMap<String, Boolean> statistics = new ConcurrentHashMap<String, Boolean>();
+
+    // 开始统计标识
+    private boolean startStatistic;
 
 
     public RaftEngine(String id, RaftLogService logService) {
@@ -227,6 +238,56 @@ public class RaftEngine {
     private void startHeartbeat() {
 
         log.info(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
+    }
+
+
+    /***
+     * 追加日志
+     *
+     * @return true 成功 false 失败
+     */
+    public boolean appendLogEntry(byte[] data) {
+
+        this.lock.writeLock().lock();
+        long lastIndex = 0;
+        try {
+
+            if (!StringUtils.equals(RaftConstant.leader, this.state)) {
+                log.warn(String.format("%s is not leader !", getId()));
+                return false;
+            }
+            this.startStatistic = true;
+            this.statistics = new ConcurrentHashMap<String, Boolean>();
+            lastIndex = this.logService.getLastIndex();
+            RaftLog raftLog = new RaftLog();
+            raftLog.setTerm(term);
+            raftLog.setContent(data);
+            raftLog.setIndex(lastIndex);
+            //  首先将追加到本地日志中
+            this.logService.appendRaftLog(raftLog);
+
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+
+
+        try {
+
+            this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
+            long lastCommittedIndex = this.logService.getLastCommittedIndex();
+            if (lastCommittedIndex < lastIndex) {
+                log.info(String.format("%s append log entry fail ", getId()));
+                return false;
+            }
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+            return false;
+        } finally {
+            this.startStatistic = false;
+        }
+        return true;
+
     }
 
     /**
@@ -554,6 +615,17 @@ public class RaftEngine {
                     }
 
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
+
+                        if (startStatistic) {
+                            statistics.putIfAbsent(peer.getId(), true);
+                            if (configuration.pass(statistics)) {
+                                // 通知成功
+                                waitForDoneCondition.signalAll();
+                            }
+
+
+                        }
+
                         nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
                     }
 

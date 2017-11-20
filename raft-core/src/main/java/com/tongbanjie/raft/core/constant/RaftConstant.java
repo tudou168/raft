@@ -36,6 +36,10 @@ public class RaftConstant {
 
     // 选举超时时间 最小为500毫秒
     public final static int electionTimeoutMs = 1000;
+
     //  心跳时间间隔
     public final static int heartbeatIntervalTimeMs = 300;
+
+    // 追加日志最大等待时间
+    public final static int waitForMaxTimeMs = 3000;
 }
