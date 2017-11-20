@@ -54,8 +54,6 @@ public class RaftEngine {
     // 当前任期
     private long term;
 
-    // 提交的索引号
-    private long commitIndex;
 
     //  raft 配置
     private RaftConfiguration configuration;
@@ -158,7 +156,6 @@ public class RaftEngine {
         this.voteFor = RaftConstant.noLeader;
         this.state = RaftConstant.follower;
         this.term = this.logService.getLastTerm();
-        this.commitIndex = this.logService.getLastCommittedIndex();
         this.executorService = new ThreadPoolExecutor(RaftConstant.raftThreadNum, RaftConstant.raftThreadNum, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         this.refreshScheduledExecutorService = Executors.newScheduledThreadPool(2);
         this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
@@ -689,5 +686,7 @@ public class RaftEngine {
         return leader;
     }
 
-
+    public String getVoteFor() {
+        return voteFor;
+    }
 }
