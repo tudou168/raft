@@ -42,4 +42,9 @@ public class RaftConstant {
 
     // 追加日志最大等待时间
     public final static int waitForMaxTimeMs = 3000;
+
+
+    public final static int version = 1;
+
+
 }

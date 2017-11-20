@@ -54,7 +54,6 @@ public class RaftEngine {
     // 当前任期
     private long term;
 
-
     //  raft 配置
     private RaftConfiguration configuration;
 
