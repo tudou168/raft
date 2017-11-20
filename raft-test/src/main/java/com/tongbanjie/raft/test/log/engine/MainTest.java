@@ -1,9 +1,11 @@
 package com.tongbanjie.raft.test.log.engine;
 
+import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.test.log.BaseTest;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -18,7 +20,7 @@ public class MainTest extends BaseTest {
 
 
     @Test
-    public void testRaftEngine() {
+    public void testRaftEngine() throws InterruptedException {
 
 
         RaftEngine raftEngine = new RaftEngine("127.0.0.1:8010", this.raftLogService);
@@ -34,7 +36,18 @@ public class MainTest extends BaseTest {
 
         raftEngine.bootstrap();
 
-        while (true) ;
+
+        int i = 0;
+        while (true) {
+            byte[] data = ("raft-test" + i).getBytes();
+            if (StringUtils.equals(RaftConstant.noLeader, raftEngine.getLeader())) {
+                System.err.println(" not found leader ....");
+            }
+            boolean sec = raftEngine.appendLogEntry(data);
+            System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
+
+            Thread.sleep(1000);
+        }
 
     }
 

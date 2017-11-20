@@ -248,9 +248,11 @@ public class RaftEngine {
      */
     public boolean appendLogEntry(byte[] data) {
 
+
         this.lock.writeLock().lock();
-        long lastIndex = 0;
+
         try {
+            log.info(String.format("%s into append log entry ...", getId()));
 
             if (!StringUtils.equals(RaftConstant.leader, this.state)) {
                 log.warn(String.format("%s is not leader !", getId()));
@@ -258,7 +260,8 @@ public class RaftEngine {
             }
             this.startStatistic = true;
             this.statistics = new ConcurrentHashMap<String, Boolean>();
-            lastIndex = this.logService.getLastIndex();
+            long lastIndex = this.logService.getLastIndex();
+            lastIndex = lastIndex + 1;
             RaftLog raftLog = new RaftLog();
             raftLog.setTerm(term);
             raftLog.setContent(data);
@@ -267,23 +270,19 @@ public class RaftEngine {
             this.logService.appendRaftLog(raftLog);
 
 
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-
-
-        try {
-
             this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
             if (lastCommittedIndex < lastIndex) {
                 log.info(String.format("%s append log entry fail ", getId()));
                 return false;
             }
+
+
         } catch (InterruptedException e) {
+            e.printStackTrace();
             log.error(e.getMessage(), e);
-            return false;
         } finally {
+            this.lock.writeLock().unlock();
             this.startStatistic = false;
         }
         return true;
@@ -619,6 +618,10 @@ public class RaftEngine {
                         if (startStatistic) {
                             statistics.putIfAbsent(peer.getId(), true);
                             if (configuration.pass(statistics)) {
+                                long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
+                                log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
+                                // 提交本地日志
+                                logService.commitToIndex(commitIndex);
                                 // 通知成功
                                 waitForDoneCondition.signalAll();
                             }
