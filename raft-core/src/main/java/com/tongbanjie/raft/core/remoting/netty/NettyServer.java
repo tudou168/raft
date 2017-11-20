@@ -34,7 +34,7 @@ public class NettyServer extends AbstractRemotingServer {
     private ChannelFuture channelFuture;
 
     private DefaultEncoder encoder = new DefaultEncoder();
-    private DefaultDecoder decoder = new DefaultDecoder(1024, 0, 100);
+    private DefaultDecoder decoder = new DefaultDecoder(1024 * 1024, 20, 4);
 
 
     public boolean open(String host, int port) {
