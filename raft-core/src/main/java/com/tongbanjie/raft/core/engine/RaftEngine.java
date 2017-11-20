@@ -92,7 +92,7 @@ public class RaftEngine {
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private Condition waitForDoneCondition = lock.readLock().newCondition();
+    private Condition waitForDoneCondition = lock.writeLock().newCondition();
 
     private SecureRandom random = new SecureRandom();
 
