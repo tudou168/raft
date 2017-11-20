@@ -21,18 +21,18 @@ public class MainTest extends BaseTest {
     public void testRaftEngine() {
 
 
-        RaftEngine raftEngine = new RaftEngine("192.168.1.101:8010", this.raftLogService);
+        RaftEngine raftEngine = new RaftEngine("127.0.0.1:8010", this.raftLogService);
 
         List<RaftPeer> raftPeers = new ArrayList<RaftPeer>();
         for (int a = 1; a < 10; a++) {
-            RaftEngine raftEngine2 = new RaftEngine("192.168.1.10" + a + ":8010", this.raftLogService);
+            RaftEngine raftEngine2 = new RaftEngine("127.0.0.1" + a + ":8010", this.raftLogService);
             RaftPeer raftPeer = new RpcRaftPeer(raftEngine2);
             raftPeers.add(raftPeer);
         }
 
         raftEngine.setPeers(raftPeers);
 
-        raftEngine.initEngine();
+        raftEngine.bootstrap();
 
         while (true) ;
 

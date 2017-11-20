@@ -232,6 +232,29 @@ public class DefaultRaftLogService implements RaftLogService {
 
     }
 
+    public long getRaftLogTermBeginIndex(long index) {
+        this.lock.lock();
+
+        try {
+
+            long term = 0;
+            int pos = 0;
+            for (; pos < this.raftLogs.size(); pos++) {
+
+                if (this.raftLogs.get(pos).getIndex() > index) {
+                    break;
+                }
+                term = this.raftLogs.get(pos).getTerm();
+            }
+
+            return term;
+
+
+        } finally {
+            this.lock.unlock();
+        }
+    }
+
     /**
      * 给定日志的索引号和任期号进行切断操作
      *

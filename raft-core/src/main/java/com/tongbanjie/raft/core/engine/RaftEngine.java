@@ -9,9 +9,10 @@ import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
-import com.tongbanjie.raft.core.protocol.ElectionRequest;
-import com.tongbanjie.raft.core.protocol.ElectionResponse;
-import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
+import com.tongbanjie.raft.core.protocol.*;
+import com.tongbanjie.raft.core.replication.ReplicationService;
+import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandler;
+import com.tongbanjie.raft.core.replication.support.DefaultReplicationService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ import static com.tongbanjie.raft.core.constant.RaftConstant.noLeader;
 import static com.tongbanjie.raft.core.constant.RaftConstant.noVoteFor;
 
 /***
- * raft 引擎
+ * raft 核心调度引擎
  * @author banxia
  * @date 2017-11-17 09:09:53
  */
@@ -63,6 +64,8 @@ public class RaftEngine {
 
     private RaftElectionService electionService;
 
+    private ReplicationService replicationService;
+
     //  raft 引擎运行状态
     private AtomicInteger running;
 
@@ -83,12 +86,15 @@ public class RaftEngine {
     private ScheduledFuture heartbeatScheduledFuture;
 
     //  日志并发刷新调度器
-    private ScheduledFuture refreshScheduledFuture;
+    private ScheduledFuture replicationScheduledFuture;
 
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private SecureRandom random = new SecureRandom();
+
+    //  用于保存各个 peer 刷新的索引号
+    private NextIndex nextIndexList;
 
     //  投票列表
     private ConcurrentHashMap<String, Boolean> votes = new ConcurrentHashMap<String, Boolean>();
@@ -98,7 +104,7 @@ public class RaftEngine {
         this.id = id;
         this.logService = logService;
         this.electionService = new DefaultRaftElectionService(this);
-
+        this.replicationService = new DefaultReplicationService(this);
     }
 
 
@@ -161,7 +167,7 @@ public class RaftEngine {
 
         try {
 
-
+            log.info(String.format("%s become candidate...", getId()));
             this.state = RaftConstant.candidate;
             this.voteFor = this.id;
             this.leader = noLeader;
@@ -215,10 +221,76 @@ public class RaftEngine {
     }
 
 
+    /***
+     * 开始发送心跳
+     */
+    private void startHeartbeat() {
+
+        log.info(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
+    }
+
+    /**
+     * 并发复制
+     */
+    private void startConcurrentReplication() {
+
+        this.lock.readLock().lock();
+        log.info(String.format(">>>>>>>>>>%s concurrent replication log...<<<<<<<<<<", getId()));
+        List<RaftPeer> recipients;
+        try {
+            recipients = this.configuration.getAllPeers().expect(getId()).explode();
+        } finally {
+            this.lock.readLock().unlock();
+        }
+        if (recipients == null || recipients.isEmpty()) {
+            long lastIndex = this.logService.getLastIndex();
+            if (lastIndex > 0) {
+                log.info(String.format("%s commit to %s", getId(), lastIndex));
+                this.logService.commitToIndex(lastIndex);
+                log.info(String.format("%s commit to %s,commitIndex %s", getId(), lastIndex, this.logService.getLastCommittedIndex()));
+
+            }
+
+            return;
+        }
+        log.info(String.format("%s start concurrent replication log to other peers...", getId()));
+        concurrentReplication(recipients);
+
+    }
+
+    private void concurrentReplication(List<RaftPeer> recipients) {
+
+
+        for (final RaftPeer raftPeer : recipients) {
+
+            long term = this.getTerm();
+            long preLogIndex = this.nextIndexList.preLogIndex(raftPeer.getId());
+            String leader = this.getLeader();
+            List<RaftLog> raftLogs = this.getLogService().getRaftLogListFromIndex(preLogIndex);
+            long committedIndex = this.getLogService().getLastCommittedIndex();
+
+            final AppendEntriesRequest request = new AppendEntriesRequest();
+            request.setLeaderId(leader);
+            request.setCommitIndex(committedIndex);
+            request.setEntries(raftLogs);
+            request.setPreLogIndex(preLogIndex);
+            request.setPreLogTerm(this.getLogService().getRaftLogTermBeginIndex(preLogIndex));
+            request.setTerm(term);
+            this.executorService.submit(new Runnable() {
+                public void run() {
+                    //发送请求
+                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request));
+                }
+            });
+        }
+
+
+    }
+
     /**
      * 重置选举超时定时器
      */
-    private void resetElectionTimeoutTimer() {
+    public void resetElectionTimeoutTimer() {
 
         if (this.electionTimeoutScheduledFuture != null && !this.electionTimeoutScheduledFuture.isDone()) {
 
@@ -239,7 +311,7 @@ public class RaftEngine {
     /**
      * 停止选举超时定时器
      */
-    private void stopElectionTimeoutTimer() {
+    public void stopElectionTimeoutTimer() {
         if (this.electionTimeoutScheduledFuture != null && !this.electionTimeoutScheduledFuture.isDone()) {
 
             this.electionTimeoutScheduledFuture.cancel(true);
@@ -258,7 +330,8 @@ public class RaftEngine {
 
         this.heartbeatScheduledFuture = this.scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                // TODO 发送
+
+                startHeartbeat();
 
             }
         }, RaftConstant.heartbeatIntervalTimeMs, RaftConstant.heartbeatIntervalTimeMs, TimeUnit.MILLISECONDS);
@@ -270,6 +343,7 @@ public class RaftEngine {
      * 停止心跳定时器
      */
     private void stopHeartbeatTimer() {
+
         if (this.heartbeatScheduledFuture != null && !this.heartbeatScheduledFuture.isDone()) {
             this.heartbeatScheduledFuture.cancel(true);
         }
@@ -278,31 +352,34 @@ public class RaftEngine {
 
 
     /**
-     * 重置并发刷新日志定时器
+     * 重置并发复制日志定时器
      */
-    private void resetRefreshScheduledTimer() {
+    private void resetReplicationScheduledTimer() {
 
-        if (this.refreshScheduledFuture != null && !this.refreshScheduledFuture.isDone()) {
-            this.refreshScheduledFuture.cancel(true);
+
+        if (this.replicationScheduledFuture != null && !this.replicationScheduledFuture.isDone()) {
+            this.replicationScheduledFuture.cancel(true);
         }
 
-        this.refreshScheduledFuture = this.refreshScheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
+        // 初始化各个 peer index
+        initNextIndex();
+
+        this.replicationScheduledFuture = this.refreshScheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                log.info(String.format("%s>>>>>>>>>>>>>>>>>>>>>>>>>执行并发日志刷新<<<<<<<<<<<<<<<<<<<<<<<", getId()));
-                //TODO
+                startConcurrentReplication();
             }
-        }, getBroadcastInterval(), getBroadcastInterval(), TimeUnit.MILLISECONDS);
+        }, getBroadcastInterval(), getBroadcastInterval() * 2, TimeUnit.MILLISECONDS);
 
     }
 
 
     /**
-     * 停止并发刷新日志定时器
+     * 停止日志并发复制定时器
      */
-    private void stopRefreshScheduledTimer() {
+    private void stopReplicationScheduledTimer() {
 
-        if (this.refreshScheduledFuture != null && !this.refreshScheduledFuture.isDone()) {
-            this.refreshScheduledFuture.cancel(true);
+        if (this.replicationScheduledFuture != null && !this.replicationScheduledFuture.isDone()) {
+            this.replicationScheduledFuture.cancel(true);
         }
 
     }
@@ -317,6 +394,15 @@ public class RaftEngine {
         return RaftConstant.electionTimeoutMs + random.nextInt(RaftConstant.electionTimeoutMs);
     }
 
+
+    /**
+     * @notice 此方法只有在 peer 节点状态为 leader时候才能调用
+     * 初始化 peer next index 集合
+     */
+    private void initNextIndex() {
+        this.nextIndexList = new NextIndex(this.configuration.getAllPeers().expect(getId()).explode(), this.logService.getLastIndex());
+
+    }
 
     /**
      * 广播时间间隔
@@ -357,14 +443,14 @@ public class RaftEngine {
                     if (term != this.electionRequest.getTerm() || !StringUtils.equals(RaftConstant.candidate, state)) {
 
                         // ignore
-                        log.warn(String.format("ignore the election vote response request.term=%s,current.term=%s,election term %s ", electionResponse.getTerm(), term, electionResponseTerm));
+                        log.warn(String.format("ignore the election vote response request.term=%s,current.term=%s,election in the  %s  term  ", electionResponse.getTerm(), term, electionResponseTerm));
                         return;
                     }
 
                     //
                     if (term > electionResponse.getTerm()) {
 
-                        log.warn(String.format("ignore the election vote response request.term=%s,current.term=%s,election term %s", electionResponse.getTerm(), term, electionResponseTerm));
+                        log.warn(String.format("ignore the election vote response request.term=%s,current.term=%s,election int the  %s term <<<<<<<<<<", electionResponse.getTerm(), term, electionResponseTerm));
                         return;
 
                     }
@@ -372,30 +458,30 @@ public class RaftEngine {
                     //  有比自己高的任期号
                     if (electionResponseTerm > term) {
 
-                        log.warn(String.format("found election vote response term %s > current term %s", electionResponseTerm, term));
+                        log.warn(String.format("found election vote response int the %s term  > the  current %s term <<<<<<<<<<", electionResponseTerm, term));
                         state = RaftConstant.follower;
                         term = electionResponse.getTerm();
                         leader = RaftConstant.noLeader;
                         voteFor = RaftConstant.noVoteFor;
-                        log.info(String.format("raft:%s become %s, term:%s", getId(), state, term));
+                        log.info(String.format("raft:%s become %s in the %s term...<<<<<<<<<<", getId(), state, term));
                         return;
                     }
                     //  投票通过
                     if (voteGranted) {
-                        log.info(String.format("%s vote for me!", raftPeer.getId()));
-                        votes.putIfAbsent(tuple.getId(), voteGranted);
+                        log.info(String.format("%s vote to me...<<<<<<<<<<", raftPeer.getId()));
+                        votes.putIfAbsent(tuple.getId(), true);
                     } else {
-                        log.info(String.format("%s not vote  for me!", raftPeer.getId()));
+                        log.info(String.format("%s not vote  to me...<<<<<<<<<<", raftPeer.getId()));
                     }
 
                     //  获得大多数投票人的认可
                     if (configuration.pass(votes)) { // my win
 
-                        log.info(String.format("I %s  won the election in term:%s...", getId(), term));
+                        log.info(String.format(">>>>>>>>>>%s I won the election in the %s term...<<<<<<<<<<", getId(), term));
                         this.becomeLeader();
                     }
 
-                    // 没有通过继续等待下次选举的到来
+                    // 没有通过继续等待下次选举的到来  continue
 
                 }
 
@@ -414,19 +500,118 @@ public class RaftEngine {
             state = RaftConstant.leader;
             voteFor = noVoteFor;
             leader = id;
-            log.info(String.format("%s stop election timeout timer", getId()));
+            log.info(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
-            log.info(String.format("%s start send heartbeat .....", getId()));
-            log.info(String.format("%s start refresh log schedule timer .....", getId()));
+            log.info(String.format(">>>>>>>>>>>%s start send heartbeat schedule timer.....<<<<<<<<<<", getId()));
+            resetHeartbeatTimer();
 
-            resetRefreshScheduledTimer();
+            log.info(String.format(">>>>>>>>>>>%s start concurrent replication log schedule timer .....<<<<<<<<<<", getId()));
+            resetReplicationScheduledTimer();
+
 
         }
+    }
+
+
+    /**************************并发日志复制处理部分************************************************/
+    /***
+     * 并发复制响应处理器
+     */
+    private class SimpleReplicationLogResponseHandler implements ReplicationLogResponseHandler {
+
+        private AppendEntriesRequest request;
+
+        public SimpleReplicationLogResponseHandler(AppendEntriesRequest request) {
+            this.request = request;
+        }
+
+        public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex) {
+            log.info(String.format("%s replication response handler %s,response %s", getId(), peer.getId(), tuple));
+
+            lock.writeLock().lock();
+
+            try {
+                long preLogIndex = request.getPreLogIndex();
+                // check response
+                if (request.getTerm() != term || !StringUtils.equals(RaftConstant.leader, state)) {
+                    log.warn("ignore the replication log response  request.term %s not eq current.term %s or current.state is not leader", request.getTerm(), term, state);
+                    return;
+                }
+                if (tuple.isSuccess()) {
+
+                    AppendEntriesResponse appendEntriesResponse = tuple.getAppendEntriesResponse();
+                    long responseTerm = appendEntriesResponse.getTerm();
+                    if (responseTerm > term) {
+                        log.info(String.format("response in the %s term > the current %s term ", responseTerm, term));
+                        becomeFollower();
+                    }
+
+
+                    if (!appendEntriesResponse.isSuccess()) {
+                        log.warn(String.format("%s replication log  to %s with pre log index %s fail", getId(), peer.getId(), preLogIndex));
+                        nextIndex.decrement(peer.getId(), preLogIndex);
+                    }
+
+                    if (request.getEntries() != null && !request.getEntries().isEmpty()) {
+                        nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
+                    }
+
+
+                }
+                log.warn(String.format("%s replication log  to %s with pre log index %s not match,the next schedule again...", getId(), peer.getId(), preLogIndex));
+                // continue
+
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+    }
+
+    /**
+     * 成为跟随者
+     */
+    private void becomeFollower() {
+
+        log.info(String.format("%s become follower in  the %s term", getId(), term));
+        this.leader = noLeader;
+        this.voteFor = noVoteFor;
+        log.info(String.format("%s  stop heartbeat timer in the  %s term", getId(), term));
+        this.stopHeartbeatTimer();
+        log.info(String.format("%s  stop replication timer in the %s term", getId(), term));
+        this.stopReplicationScheduledTimer();
+        log.info(String.format("%s  reset election timeout timer in the %s term", getId(), term));
+        this.resetElectionTimeoutTimer();
     }
 
 
     public String getId() {
         return id;
     }
+
+    public String getState() {
+        return state;
+    }
+
+    public long getTerm() {
+        return term;
+    }
+
+    public RaftLogService getLogService() {
+        return logService;
+    }
+
+    public void setLogService(RaftLogService logService) {
+        this.logService = logService;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getLeader() {
+        return leader;
+    }
+
+
 }

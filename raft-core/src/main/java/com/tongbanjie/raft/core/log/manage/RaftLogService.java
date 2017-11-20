@@ -30,6 +30,14 @@ public interface RaftLogService {
     List<RaftLog> getRaftLogListFromIndex(long index);
 
     /**
+     * 获取指定索引号的任期号
+     *
+     * @param index 日志索引号
+     * @return
+     */
+    long getRaftLogTermBeginIndex(long index);
+
+    /**
      * 截断raft日志
      * 此方法对于follower获取追加日志的请求的时候，会首先把leader传递过来的 index 和 term 之后的本地未提交的日志进行截断删除操作，
      * 然后进行将leader的日志追加到本地。
