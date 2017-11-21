@@ -46,5 +46,8 @@ public class RaftConstant {
 
     public final static int version = 1;
 
+    public final static int REQUEST = 1;
+
+    public final static int RESPONSE = 2;
 
 }

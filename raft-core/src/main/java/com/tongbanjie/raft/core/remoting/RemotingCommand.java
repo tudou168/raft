@@ -8,24 +8,20 @@ import java.io.Serializable;
 /***
  *
  * @author banxia
- * @date 2017-11-20 20:20:58
+ * @date 2017-11-21 14:14:31
  */
 public class RemotingCommand implements Serializable {
 
-
-    //  请求 id
+    //  请求id
     private Long requestId;
-
-    //  请求版本
-    private Integer version;
-
-    // 类型
-    private Integer type;
 
     // 命令类型
     private Integer commandType;
 
-    //  业务实体内容
+    //  状态
+    private Integer state;
+
+    //  请求体
     private String body;
 
 
@@ -37,28 +33,20 @@ public class RemotingCommand implements Serializable {
         this.requestId = requestId;
     }
 
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public Integer getType() {
-        return type;
-    }
-
-    public void setType(Integer type) {
-        this.type = type;
-    }
-
     public Integer getCommandType() {
         return commandType;
     }
 
     public void setCommandType(Integer commandType) {
         this.commandType = commandType;
+    }
+
+    public Integer getState() {
+        return state;
+    }
+
+    public void setState(Integer state) {
+        this.state = state;
     }
 
     public String getBody() {

@@ -39,6 +39,7 @@ public class MainTest extends BaseTest {
 
         int i = 0;
         while (true) {
+
             byte[] data = ("raft-test" + i).getBytes();
             if (StringUtils.equals(RaftConstant.noLeader, raftEngine.getLeader())) {
                 System.err.println(" not found leader ....");
