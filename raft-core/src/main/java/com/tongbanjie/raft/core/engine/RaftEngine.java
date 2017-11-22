@@ -286,6 +286,50 @@ public class RaftEngine {
 
     }
 
+
+    public ElectionResponse electionVoteHandler(ElectionRequest electionRequest) {
+
+        this.lock.writeLock().lock();
+        ElectionResponse electionResponse = new ElectionResponse();
+        try {
+
+            electionResponse = new ElectionResponse();
+
+            long requestTerm = electionRequest.getTerm();
+
+            // 判断当前任期是否大于请求的任期
+
+            if (this.term > requestTerm) {
+                electionResponse.setTerm(this.term);
+                electionResponse.setVoteGranted(false);
+                electionResponse.setReason(String.format("Term %s < %s", requestTerm, this.term));
+                return electionResponse;
+            }
+
+            // found request.term > term
+            boolean stepDown = false;
+            if (requestTerm > this.term) {
+
+                this.term = requestTerm;
+                this.leader = noLeader;
+                this.voteFor = noVoteFor;
+                stepDown = true;
+            }
+
+
+            if (StringUtils.equals(RaftConstant.leader, this.state) && !stepDown) {
+
+            }
+
+
+            return electionResponse;
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+
+    }
+
     /**
      * 并发复制
      */

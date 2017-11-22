@@ -153,24 +153,30 @@ public class RpcRaftPeer implements RaftPeer {
         return response;
     }
 
+    /**
+     * @param electionRequest
+     * @return
+     */
     public ElectionResponse electionVoteHandler(ElectionRequest electionRequest) {
 
-        ElectionResponse response = new ElectionResponse();
-        response.setTerm(electionRequest.getTerm());
-        int value = random.nextInt(100);
-        if (value % 2 == 0) {
-            response.setVoteGranted(true);
-        } else {
-            response.setReason(String.format("request vote %s random num not match", electionRequest));
-        }
-        return response;
+
+        return this.raftEngine.electionVoteHandler(electionRequest);
+//        ElectionResponse response = new ElectionResponse();
+//        response.setTerm(electionRequest.getTerm());
+//        int value = random.nextInt(100);
+//        if (value % 2 == 0) {
+//            response.setVoteGranted(true);
+//        } else {
+//            response.setReason(String.format("request vote %s random num not match", electionRequest));
+//        }
+//        return response;
     }
 
     public AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest request) {
         int value = random.nextInt(1000);
 
         AppendEntriesResponse response = new AppendEntriesResponse();
-        
+
         long term = request.getTerm();
         response.setTerm(term);
         if (value % 2 == 0) {
