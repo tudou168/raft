@@ -131,13 +131,20 @@ public class NettyClient extends AbstractRemotingClient {
                             }
                         }, 3, TimeUnit.SECONDS);
 
-                        log.info(String.format("Failed to connect to server [%s:%s], try connect after 5s", host, port));
+                        log.info(String.format("Failed to connect to server [%s:%s], try connect after 3s", host, port));
                     }
                 }
             });
         } catch (Exception e) {
             log.error(String.format("the netty server [%s:%s] is  open fail...", host, port), e);
-            this.doConnect();
+
+            try {
+                log.error(String.format("Failed to connect to server [%s:%s], try connect after 3s", host, port), e);
+                Thread.sleep(3000);
+                this.doConnect();
+            } catch (InterruptedException e1) {
+
+            }
         }
     }
 
