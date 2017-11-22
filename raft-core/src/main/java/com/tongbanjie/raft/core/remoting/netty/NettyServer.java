@@ -5,6 +5,7 @@ import com.tongbanjie.raft.core.remoting.AbstractRemotingServer;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandDecoder;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandEncoder;
+import com.tongbanjie.raft.core.remoting.netty.handler.HeartbeatServerHandler;
 import com.tongbanjie.raft.core.remoting.netty.handler.RemotingCommandServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -14,6 +15,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +90,10 @@ public class NettyServer extends AbstractRemotingServer {
 
                 ch.pipeline().addLast(new RemotingCommandEncoder());
                 ch.pipeline().addLast(new RemotingCommandDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFF_SET, LENGTH_FIELD_LENGTH));
+                ch.pipeline().addLast(new IdleStateHandler(15, 0, 0));
                 ch.pipeline().addLast(new RemotingCommandServerHandler());
+                ch.pipeline().addLast(new HeartbeatServerHandler());
+
             }
         });
 

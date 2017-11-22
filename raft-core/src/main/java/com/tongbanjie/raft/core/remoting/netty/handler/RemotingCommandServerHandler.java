@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.remoting.netty.handler;
 
+import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -23,7 +24,15 @@ public class RemotingCommandServerHandler extends SimpleChannelInboundHandler<Re
         }
 
         log.info(">>>>>>>>>receive msg from client :" + msg);
-        ctx.writeAndFlush(msg);
+
+        if (msg.getCommandType() != RemotingCommandType.HEARTBEAT.getValue()) {
+            ctx.writeAndFlush(msg);
+        } else {
+            ctx.fireChannelRead(msg);
+        }
+
+
+
 
     }
 }

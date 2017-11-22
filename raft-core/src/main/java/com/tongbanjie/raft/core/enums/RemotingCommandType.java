@@ -8,6 +8,8 @@ package com.tongbanjie.raft.core.enums;
  */
 public enum RemotingCommandType {
 
+    // 心跳
+    HEARTBEAT(0),
     //  选举
     ELECTION(1),
     // 追加日志

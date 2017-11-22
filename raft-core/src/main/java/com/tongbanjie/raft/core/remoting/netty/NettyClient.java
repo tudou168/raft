@@ -6,6 +6,8 @@ import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.*;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandDecoder;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandEncoder;
+import com.tongbanjie.raft.core.remoting.netty.handler.HeartbeatClientHandler;
+import com.tongbanjie.raft.core.remoting.netty.handler.HeartbeatServerHandler;
 import com.tongbanjie.raft.core.remoting.netty.handler.RemotingCommandClientHandler;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
 import io.netty.bootstrap.Bootstrap;
@@ -13,6 +15,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,7 +165,8 @@ public class NettyClient extends AbstractRemotingClient {
                     protected void initChannel(final SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(new RemotingCommandEncoder());
                         ch.pipeline().addLast(new RemotingCommandDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFF_SET, LENGTH_FIELD_LENGTH));
-                        ch.pipeline().addLast(new RemotingCommandClientHandler(NettyClient.this, new MessageHandler() {
+                        ch.pipeline().addLast(new IdleStateHandler(0, 0, 5));
+                        ch.pipeline().addLast(new RemotingCommandClientHandler(new MessageHandler() {
                             public void handler(RemotingChannel channel, Object msg) {
                                 RemotingCommand command = (RemotingCommand) msg;
                                 NettyResponseFuture responseFuture = NettyClient.this.removeNettyResponseFuture(command.getRequestId());
@@ -177,6 +181,7 @@ public class NettyClient extends AbstractRemotingClient {
 
                             }
                         }));
+                        ch.pipeline().addLast(new HeartbeatClientHandler(NettyClient.this));
                     }
                 });
 
@@ -247,6 +252,7 @@ public class NettyClient extends AbstractRemotingClient {
         NettyClient nettyClient = new NettyClient();
         nettyClient.open("127.0.0.1", 8181);
 
+        int i = 0;
         for (; ; ) {
 
             try {
@@ -261,14 +267,17 @@ public class NettyClient extends AbstractRemotingClient {
                     RemotingCommand response = nettyClient.request(command);
                     log.info(">>>>>>>>>>请求响应结果:response:" + response);
                 }
-
-
                 Thread.sleep(1000);
+
+                if (i > 20) break;
+                i++;
             } catch (Exception e) {
 
             }
 
         }
+
+        while (true) ;
 
     }
 }

@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.remoting.netty.handler;
 
+import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.MessageHandler;
 import com.tongbanjie.raft.core.remoting.RemotingChannel;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
@@ -21,8 +22,7 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
     private MessageHandler messageHandler;
 
 
-    public RemotingCommandClientHandler(RemotingChannel remotingChannel, MessageHandler messageHandler) {
-        this.remotingChannel = remotingChannel;
+    public RemotingCommandClientHandler(MessageHandler messageHandler) {
         this.messageHandler = messageHandler;
     }
 
@@ -32,14 +32,13 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
             throw new RuntimeException("response receive msg is null");
         }
 
-        this.messageHandler.handler(this.remotingChannel, msg);
-        log.info(">>>>>> receive msg from server :" + msg);
+        if (msg.getCommandType() != RemotingCommandType.HEARTBEAT.getValue()) {
+            this.messageHandler.handler(this.remotingChannel, msg);
+            log.info(">>>>>> receive msg from server :" + msg);
+        }
+
+
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        super.channelInactive(ctx);
-        System.err.println(">>>>>>>>>>>>channelInactive<<<<<<<<<<<<");
-        this.remotingChannel.doConnect();
-    }
+
 }
