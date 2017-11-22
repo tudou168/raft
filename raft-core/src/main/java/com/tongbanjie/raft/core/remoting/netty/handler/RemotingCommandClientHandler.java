@@ -22,7 +22,9 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
     private MessageHandler messageHandler;
 
 
-    public RemotingCommandClientHandler(MessageHandler messageHandler) {
+    public RemotingCommandClientHandler(RemotingChannel remotingChannel, MessageHandler messageHandler) {
+
+        this.remotingChannel = remotingChannel;
         this.messageHandler = messageHandler;
     }
 

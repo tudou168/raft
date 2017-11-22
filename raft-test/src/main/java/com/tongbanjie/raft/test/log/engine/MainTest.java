@@ -27,9 +27,13 @@ public class MainTest extends BaseTest {
 
         List<RaftPeer> raftPeers = new ArrayList<RaftPeer>();
         for (int a = 1; a < 10; a++) {
-            RaftEngine raftEngine2 = new RaftEngine("127.0.0.1" + a + ":8010", this.raftLogService);
-            RaftPeer raftPeer = new RpcRaftPeer(raftEngine2);
-            raftPeers.add(raftPeer);
+            String host = "127.0.0.1";
+            int port = 8080 + a;
+
+            RaftEngine raftEngine2 = new RaftEngine(host + ":" + port, this.raftLogService);
+            RaftPeer peer = new RpcRaftPeer(host + ":" + port);
+            peer.setRaftEngine(raftEngine2);
+            raftPeers.add(peer);
         }
 
         raftEngine.setPeers(raftPeers);
@@ -46,7 +50,6 @@ public class MainTest extends BaseTest {
             }
             boolean sec = raftEngine.appendLogEntry(data);
             System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
-
             Thread.sleep(1000);
         }
 

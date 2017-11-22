@@ -6,8 +6,7 @@ import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.*;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandDecoder;
 import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandEncoder;
-import com.tongbanjie.raft.core.remoting.netty.handler.HeartbeatClientHandler;
-import com.tongbanjie.raft.core.remoting.netty.handler.HeartbeatServerHandler;
+import com.tongbanjie.raft.core.remoting.netty.handler.heartbeat.HeartbeatClientHandler;
 import com.tongbanjie.raft.core.remoting.netty.handler.RemotingCommandClientHandler;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
 import io.netty.bootstrap.Bootstrap;
@@ -166,7 +165,7 @@ public class NettyClient extends AbstractRemotingClient {
                         ch.pipeline().addLast(new RemotingCommandEncoder());
                         ch.pipeline().addLast(new RemotingCommandDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFF_SET, LENGTH_FIELD_LENGTH));
                         ch.pipeline().addLast(new IdleStateHandler(0, 0, 5));
-                        ch.pipeline().addLast(new RemotingCommandClientHandler(new MessageHandler() {
+                        ch.pipeline().addLast(new RemotingCommandClientHandler(NettyClient.this, new MessageHandler() {
                             public void handler(RemotingChannel channel, Object msg) {
                                 RemotingCommand command = (RemotingCommand) msg;
                                 NettyResponseFuture responseFuture = NettyClient.this.removeNettyResponseFuture(command.getRequestId());
@@ -223,6 +222,10 @@ public class NettyClient extends AbstractRemotingClient {
 
     public RemotingCommand request(RemotingCommand command) {
 
+        if (channelFuture == null || !this.channelFuture.channel().isActive()) {
+
+            throw new RuntimeException("request fail  request :" + command);
+        }
         NettyResponseFuture responseFuture = new NettyResponseFuture(command, TIMEOUT);
         this.registerCallback(responseFuture);
         ChannelFuture writeFuture = this.channelFuture.channel().writeAndFlush(command);

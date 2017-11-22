@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.remoting.netty.handler;
+package com.tongbanjie.raft.core.remoting.netty.handler.heartbeat;
 
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
@@ -11,8 +11,6 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.netty.handler.timeout.IdleState.READER_IDLE;
 
 /***
  *
