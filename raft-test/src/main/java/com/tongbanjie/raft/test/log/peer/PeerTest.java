@@ -26,9 +26,9 @@ public class PeerTest extends BaseTest {
         String localServer = "127.0.0.1:7002";
         String servers = "127.0.0.1:7001";
 
-        this.raftLogCodec = new Crc32RaftLogCodec();
-        this.dataStore = new DefaultDataStore("/Users/banxia/Desktop/wp/" + localServer, "raft");
-        raftLogService = new DefaultRaftLogService(this.dataStore, this.raftLogCodec);
+        Crc32RaftLogCodec crc32RaftLogCodec = new Crc32RaftLogCodec();
+        DefaultDataStore defaultDataStore = new DefaultDataStore("/Users/banxia/Desktop/wp/" + localServer, "raft");
+        raftLogService = new DefaultRaftLogService(defaultDataStore, crc32RaftLogCodec);
         String[] serverList = servers.split(",");
         List<RaftPeer> peerList = new ArrayList<RaftPeer>();
         for (String server : serverList) {

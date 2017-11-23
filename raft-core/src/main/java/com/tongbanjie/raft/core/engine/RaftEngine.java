@@ -476,6 +476,7 @@ public class RaftEngine {
             appendEntriesResponse.setSuccess(true);
             appendEntriesResponse.setTerm(this.term);
             appendEntriesResponse.setReason("append log success");
+            log.info("***********************append log success**********************");
             return appendEntriesResponse;
         } finally {
             if (stepDown) {
@@ -812,18 +813,14 @@ public class RaftEngine {
 
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
 
-                        if (startStatistic) {
-                            statistics.putIfAbsent(peer.getId(), true);
-                            if (configuration.pass(statistics)) {
-                                long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
-                                log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
-                                // 提交本地日志
-                                logService.commitToIndex(commitIndex);
-                                // 通知成功
-                                waitForDoneCondition.signalAll();
-                            }
-
-
+                        statistics.putIfAbsent(peer.getId(), true);
+                        if (configuration.pass(statistics)) {
+                            long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
+                            log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
+                            // 提交本地日志
+                            logService.commitToIndex(commitIndex);
+                            // 通知成功
+                            waitForDoneCondition.signalAll();
                         }
 
                         nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
