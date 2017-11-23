@@ -113,7 +113,7 @@ public class DefaultRaftLogService implements RaftLogService {
         } finally {
             this.lock.unlock();
         }
-        return false;
+        return true;
     }
 
     /***

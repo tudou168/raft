@@ -268,10 +268,11 @@ public class RaftEngine {
             raftLog.setIndex(lastIndex);
             //  首先将追加到本地日志中
             this.logService.appendRaftLog(raftLog);
+            this.statistics.put(this.getId(), true);
             this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
             if (lastCommittedIndex < lastIndex) {
-                log.info(String.format("%s append log entry fail ", getId()));
+                log.warn(String.format("%s append log entry fail ", getId()));
                 return false;
             }
 
@@ -449,7 +450,7 @@ public class RaftEngine {
             for (RaftLog raftLog : entries) {
                 boolean success = this.logService.appendRaftLog(raftLog);
                 if (!success) {
-                    log.warn("%s append log:%s fail", getId(), raftLog);
+                    log.warn(String.format("%s append log:%s fail", getId(), raftLog));
                     appendEntriesResponse.setSuccess(false);
                     appendEntriesResponse.setTerm(this.term);
                     appendEntriesResponse.setReason(String.format("append raft log fail with log:%s ", raftLog));

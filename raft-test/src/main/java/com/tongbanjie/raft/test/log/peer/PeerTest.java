@@ -23,8 +23,9 @@ public class PeerTest extends BaseTest {
     @Test
     public void testPeer() throws InterruptedException {
 
-        String servers = "127.0.0.1:9000";
         String localServer = "127.0.0.1:9001";
+        String servers = "127.0.0.1:9000";
+
 
 
         this.raftLogCodec = new Crc32RaftLogCodec();
@@ -58,7 +59,7 @@ public class PeerTest extends BaseTest {
 //                System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
 //            }
 //
-//            Thread.sleep(1000);
+            Thread.sleep(1000);
         }
 
 
