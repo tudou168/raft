@@ -287,6 +287,12 @@ public class RaftEngine {
     }
 
 
+    /**
+     * 选举处理
+     *
+     * @param electionRequest
+     * @return
+     */
     public ElectionResponse electionVoteHandler(ElectionRequest electionRequest) {
 
         this.lock.writeLock().lock();
@@ -296,6 +302,9 @@ public class RaftEngine {
             electionResponse = new ElectionResponse();
 
             long requestTerm = electionRequest.getTerm();
+            long lastLogIndex = electionRequest.getLastLogIndex();
+            long lastLogTerm = electionRequest.getLastLogTerm();
+            String candidateId = electionRequest.getCandidateId();
 
             // 判断当前任期是否大于请求的任期
 
@@ -310,6 +319,7 @@ public class RaftEngine {
             boolean stepDown = false;
             if (requestTerm > this.term) {
 
+                log.warn(String.format("%s found request.term %s > current.term %s", getId(), requestTerm, this.term));
                 this.term = requestTerm;
                 this.leader = noLeader;
                 this.voteFor = noVoteFor;
@@ -317,10 +327,47 @@ public class RaftEngine {
             }
 
 
+            //  check i am leader
             if (StringUtils.equals(RaftConstant.leader, this.state) && !stepDown) {
+                electionResponse.setVoteGranted(false);
+                electionResponse.setTerm(term);
+                electionResponse.setReason("i am leader");
 
+                return electionResponse;
             }
 
+
+            // check already voted for you
+            if (StringUtils.equals(candidateId, this.getId())) {
+                electionResponse.setVoteGranted(true);
+                electionResponse.setTerm(term);
+                return electionResponse;
+            }
+
+            // check already voted for other peer
+            if (!StringUtils.equals(noVoteFor, this.getId())) {
+                electionResponse.setVoteGranted(false);
+                electionResponse.setTerm(term);
+                electionResponse.setReason("vote for other");
+                return electionResponse;
+            }
+
+
+            // check match  last index and last term
+            long lastIndex = this.logService.getLastIndex();
+            long lastTerm = this.logService.getLastTerm();
+
+            if (lastIndex > lastLogIndex || lastTerm > lastLogTerm) {
+                electionResponse.setVoteGranted(false);
+                electionResponse.setTerm(term);
+                electionResponse.setReason(String.format("%s log.index %s > request.lastLogIndex %s or log.lastTerm %s > request.lastLogTerm %s", getId(), lastIndex, lastLogIndex, lastTerm, lastLogTerm));
+                return electionResponse;
+            }
+
+            // set vote for the request candidate id
+            this.voteFor = candidateId;
+            electionResponse.setVoteGranted(false);
+            electionResponse.setTerm(term);
 
             return electionResponse;
 

@@ -15,8 +15,8 @@ import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
  */
 public class DefaultRaftElectionService implements RaftElectionService {
 
-    private RaftEngine engine;
 
+    private RaftEngine engine;
 
     public DefaultRaftElectionService(RaftEngine engine) {
         this.engine = engine;
