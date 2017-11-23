@@ -23,13 +23,11 @@ public class PeerTest extends BaseTest {
     @Test
     public void testPeer() throws InterruptedException {
 
-        String localServer = "127.0.0.1:9001";
-        String servers = "127.0.0.1:9000";
-
-
+        String localServer = "127.0.0.1:7002";
+        String servers = "127.0.0.1:7001";
 
         this.raftLogCodec = new Crc32RaftLogCodec();
-        this.dataStore = new DefaultDataStore("/Users/banxia/Desktop/wp/" + localServer, ".raft");
+        this.dataStore = new DefaultDataStore("/Users/banxia/Desktop/wp/" + localServer, "raft");
         raftLogService = new DefaultRaftLogService(this.dataStore, this.raftLogCodec);
         String[] serverList = servers.split(",");
         List<RaftPeer> peerList = new ArrayList<RaftPeer>();

@@ -28,7 +28,6 @@ public class RemotingCommandDecoder extends LengthFieldBasedFrameDecoder {
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
 
-        log.info(">>>into RemotingCommandDecoder.decode...");
         if (in == null) {
             return null;
         }
@@ -50,9 +49,8 @@ public class RemotingCommandDecoder extends LengthFieldBasedFrameDecoder {
         offset += 4;
         int length = ByteUtil.bytes2int(header, offset);
         offset += 4;
-        log.info(">>>>>>>>>>>>>length=" + length);
+
         if (in.readableBytes() < length) {
-            log.warn("has no enough msg length... length=" + length + ",readableBytes=" + in.readableBytes());
             in.resetReaderIndex();
             return null;
         }
@@ -64,7 +62,6 @@ public class RemotingCommandDecoder extends LengthFieldBasedFrameDecoder {
         command.setState(state);
         command.setCommandType(commandType);
         command.setBody(body);
-        log.info(">>>decode success command:" + command);
         return command;
     }
 }

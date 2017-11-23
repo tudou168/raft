@@ -258,7 +258,6 @@ public class RaftEngine {
                 log.warn(String.format("%s is not leader !", getId()));
                 return false;
             }
-            this.startStatistic = true;
             this.statistics = new ConcurrentHashMap<String, Boolean>();
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
@@ -272,7 +271,8 @@ public class RaftEngine {
             this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
             if (lastCommittedIndex < lastIndex) {
-                log.warn(String.format("%s append log entry fail ", getId()));
+                //  TODO 要更换其他方式实现
+//                log.warn(String.format("%s append log entry fail ", getId()));
                 return false;
             }
 
@@ -300,6 +300,7 @@ public class RaftEngine {
 
         this.lock.writeLock().lock();
         ElectionResponse electionResponse = new ElectionResponse();
+        boolean stepDown = false;
         try {
 
             long requestTerm = electionRequest.getTerm();
@@ -318,13 +319,14 @@ public class RaftEngine {
             }
 
             // found request.term > term
-            boolean stepDown = false;
+
             if (requestTerm > this.term) {
 
                 log.warn(String.format("%s found request.term %s > current.term %s", getId(), requestTerm, this.term));
                 this.term = requestTerm;
                 this.leader = noLeader;
                 this.voteFor = noVoteFor;
+                this.state = RaftConstant.follower;
                 stepDown = true;
             }
 
@@ -334,7 +336,6 @@ public class RaftEngine {
                 electionResponse.setVoteGranted(false);
                 electionResponse.setTerm(term);
                 electionResponse.setReason("i am leader");
-
                 return electionResponse;
             }
 
@@ -379,6 +380,10 @@ public class RaftEngine {
             return electionResponse;
 
         } finally {
+
+            if (stepDown) {
+                becomeFollower();
+            }
             this.lock.writeLock().unlock();
         }
 
@@ -463,8 +468,8 @@ public class RaftEngine {
 
             if (commitIndex > 0 && commitIndex > lastCommittedIndex) {
                 // commit the log
-                this.logService.commitToIndex(lastCommittedIndex);
-                log.info(String.format("%s raft log  committed to %s index", getId(), lastCommittedIndex));
+                this.logService.commitToIndex(commitIndex);
+                log.info(String.format("%s raft log  committed to %s index", getId(), commitIndex));
             }
 
             // every good

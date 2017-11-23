@@ -350,7 +350,7 @@ public class DefaultRaftLogService implements RaftLogService {
 
             long lastCommittedIndex = this.getLastCommittedIndex();
             // 如果当前已经提交的索引号不大于当前要提交的索引号
-            if (commitIndex <= lastCommittedIndex) {
+            if (commitIndex < lastCommittedIndex) {
                 // ignore 忽略
                 return true;
             }

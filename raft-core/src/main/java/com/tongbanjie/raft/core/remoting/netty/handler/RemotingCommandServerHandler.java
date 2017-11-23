@@ -32,8 +32,6 @@ public class RemotingCommandServerHandler extends SimpleChannelInboundHandler<Re
             throw new RuntimeException("receive msg is null");
         }
 
-        log.info(">>>>>>>>>receive msg from client :" + msg);
-
         if (msg.getCommandType() == RemotingCommandType.HEARTBEAT.getValue()) {
             ctx.fireChannelRead(msg);
 

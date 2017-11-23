@@ -36,7 +36,6 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
 
         if (msg.getCommandType() != RemotingCommandType.HEARTBEAT.getValue()) {
             this.messageHandler.handler(this.remotingChannel, msg);
-            log.info(">>>>>> receive msg from server :" + msg);
         }
 
 

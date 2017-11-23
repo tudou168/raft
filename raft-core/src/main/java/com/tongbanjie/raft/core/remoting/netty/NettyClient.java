@@ -232,7 +232,6 @@ public class NettyClient extends AbstractRemotingClient {
         boolean result = writeFuture.awaitUninterruptibly(TIMEOUT);
         if (result && writeFuture.isSuccess()) {
 
-            log.info("request success responseFuture:" + responseFuture + ",request:" + command);
             return responseFuture.getRemotingCommand();
         }
 
@@ -246,41 +245,6 @@ public class NettyClient extends AbstractRemotingClient {
 
 
         throw new RuntimeException("request fail  request :" + command);
-
-    }
-
-
-    public static void main(String[] args) {
-
-        NettyClient nettyClient = new NettyClient();
-        nettyClient.open("127.0.0.1", 8181);
-
-        int i = 0;
-        for (; ; ) {
-
-            try {
-
-                RemotingCommand command = new RemotingCommand();
-                command.setBody("动态");
-                command.setRequestId(RequestIdGenerator.getRequestId());
-                command.setCommandType(RemotingCommandType.ELECTION.getValue());
-                command.setState(RemotingCommandState.SUCCESS.getValue());
-                ChannelFuture channelFuture = nettyClient.channelFuture;
-                if (channelFuture != null && channelFuture.channel().isActive()) {
-                    RemotingCommand response = nettyClient.request(command);
-                    log.info(">>>>>>>>>>请求响应结果:response:" + response);
-                }
-                Thread.sleep(1000);
-
-                if (i > 20) break;
-                i++;
-            } catch (Exception e) {
-
-            }
-
-        }
-
-        while (true) ;
 
     }
 }
