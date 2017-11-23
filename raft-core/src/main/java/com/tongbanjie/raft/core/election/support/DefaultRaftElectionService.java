@@ -7,6 +7,8 @@ import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.protocol.ElectionRequest;
 import com.tongbanjie.raft.core.protocol.ElectionResponse;
 import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /***
  * 带有投票超时功能的选举
@@ -15,6 +17,8 @@ import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
  */
 public class DefaultRaftElectionService implements RaftElectionService {
 
+
+    private final static Logger log = LoggerFactory.getLogger(DefaultRaftElectionService.class);
 
     private RaftEngine engine;
 
@@ -33,7 +37,8 @@ public class DefaultRaftElectionService implements RaftElectionService {
             tuple.setSuccess(true);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
+            tuple.setId(raftPeer.getId());
             tuple.setSuccess(false);
         }
         handler.handler(raftPeer, tuple);

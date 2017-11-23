@@ -1,6 +1,7 @@
 package com.tongbanjie.raft.core.remoting.netty.codec;
 
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
+import com.tongbanjie.raft.core.util.ByteUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -36,14 +37,27 @@ public class RemotingCommandDecoder extends LengthFieldBasedFrameDecoder {
             return null;
         }
 
-        long requestId = in.readLong();
-        int state = in.readInt();
-        int commandType = in.readInt();
-        int length = in.readInt();
+        byte[] header = new byte[HEADER_LENGTH];
 
+        in.readBytes(header);
+
+        int offset = 0;
+        long requestId = ByteUtil.bytes2long(header, offset);
+        offset += 8;
+        int state = ByteUtil.bytes2int(header, offset);
+        offset += 4;
+        int commandType = ByteUtil.bytes2int(header, offset);
+        offset += 4;
+        int length = ByteUtil.bytes2int(header, offset);
+        offset += 4;
+        log.info(">>>>>>>>>>>>>length=" + length);
+        if (in.readableBytes() < length) {
+            log.warn("has no enough msg length... length=" + length + ",readableBytes=" + in.readableBytes());
+            in.resetReaderIndex();
+            return null;
+        }
         byte[] bys = new byte[length];
         in.readBytes(bys);
-
         String body = new String(bys, "UTF-8");
         RemotingCommand command = new RemotingCommand();
         command.setRequestId(requestId);

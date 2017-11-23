@@ -272,13 +272,13 @@ public class DefaultRaftLogService implements RaftLogService {
 
             //  校验给定的索引范围
             if (index < lastCommittedIndex) {
-
-                throw new RaftException(String.format("index:%s < last commit index:%s error", index, lastCommittedIndex));
+                log.warn(String.format("index:%s < last commit index:%s error", index, lastCommittedIndex));
+                return false;
             }
 
             if (index > lastIndex) {
-
-                throw new RaftException(String.format("index:%s > last index:%s error", index, lastIndex));
+                log.warn(String.format("index:%s > last index:%s error", index, lastIndex));
+                return false;
             }
 
             //  如果给定的日志索引号为0 则将保存的日志列表进行初始化
@@ -296,30 +296,33 @@ public class DefaultRaftLogService implements RaftLogService {
                 }
 
                 if (this.raftLogs.get(pos).getIndex() > index) {
-
-                    throw new RaftException(String.format(" the index %s in log list not found error!", index));
+                    log.warn(String.format(" the index %s in log list not found error!", index));
+                    return false;
                 }
 
                 if (this.raftLogs.get(pos).getIndex() != index) {
-                    throw new RaftException(String.format(" the index %s in log list not found error!", index));
+                    log.warn(String.format(" the index %s in log list not found error!", index));
+                    return false;
                 }
 
                 if (term != this.raftLogs.get(pos).getTerm()) {
-                    throw new RaftException(String.format(" the term %s in log list not found error!", term));
+                    log.warn(String.format(" the term %s in log list not found error!", term));
+                    return false;
                 }
                 // 正常退出循环
                 break;
             }
 
             if (pos < this.committedPos) {
-                throw new RaftException(String.format("the pos:%s < committed pos:%s error", pos, committedPos));
+                log.warn(String.format("the pos:%s < committed pos:%s error", pos, committedPos));
+                return false;
             }
+
 
             int truncateFrom = pos + 1;
 
             //  判断是否有要截取的日志内容
             if (truncateFrom >= this.raftLogs.size()) {
-
                 return true;
             }
             this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);

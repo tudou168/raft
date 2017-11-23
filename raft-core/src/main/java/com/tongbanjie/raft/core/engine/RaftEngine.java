@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.tongbanjie.raft.core.constant.RaftConstant.follower;
 import static com.tongbanjie.raft.core.constant.RaftConstant.noLeader;
 import static com.tongbanjie.raft.core.constant.RaftConstant.noVoteFor;
 
@@ -175,8 +176,10 @@ public class RaftEngine {
         try {
 
             log.info(String.format("%s become candidate...", getId()));
+            this.votes.clear();
             this.state = RaftConstant.candidate;
             this.voteFor = this.id;
+            this.votes.put(this.id, true);
             this.leader = noLeader;
             this.term++;
             log.info(String.format("%s start Election with term=%s...", getId(), this.term));
@@ -186,7 +189,7 @@ public class RaftEngine {
             this.lock.writeLock().unlock();
         }
 
-        this.votes.clear();
+
         List<RaftPeer> peers = this.configuration.getAllPeers().expect(this.id).explode();
         if (peers == null || peers.size() == 0) return;
 
@@ -234,6 +237,7 @@ public class RaftEngine {
     private void startHeartbeat() {
 
         log.info(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
+        this.appendLogEntry("heartbeat".getBytes());
     }
 
 
@@ -264,8 +268,6 @@ public class RaftEngine {
             raftLog.setIndex(lastIndex);
             //  首先将追加到本地日志中
             this.logService.appendRaftLog(raftLog);
-
-
             this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
             if (lastCommittedIndex < lastIndex) {
@@ -299,8 +301,6 @@ public class RaftEngine {
         ElectionResponse electionResponse = new ElectionResponse();
         try {
 
-            electionResponse = new ElectionResponse();
-
             long requestTerm = electionRequest.getTerm();
             long lastLogIndex = electionRequest.getLastLogIndex();
             long lastLogTerm = electionRequest.getLastLogTerm();
@@ -309,6 +309,7 @@ public class RaftEngine {
             // 判断当前任期是否大于请求的任期
 
             if (this.term > requestTerm) {
+
                 electionResponse.setTerm(this.term);
                 electionResponse.setVoteGranted(false);
                 electionResponse.setReason(String.format("Term %s < %s", requestTerm, this.term));
@@ -345,7 +346,7 @@ public class RaftEngine {
             }
 
             // check already voted for other peer
-            if (!StringUtils.equals(noVoteFor, this.getId())) {
+            if (!StringUtils.equals(noVoteFor, this.voteFor)) {
                 electionResponse.setVoteGranted(false);
                 electionResponse.setTerm(term);
                 electionResponse.setReason("vote for other");
@@ -364,17 +365,119 @@ public class RaftEngine {
                 return electionResponse;
             }
 
+            //  rest the election timeout timer
+            this.resetElectionTimeoutTimer();
             // set vote for the request candidate id
             this.voteFor = candidateId;
-            electionResponse.setVoteGranted(false);
+            electionResponse.setVoteGranted(true);
             electionResponse.setTerm(term);
 
+            if (stepDown) {
+                this.becomeFollower();
+            }
             return electionResponse;
 
         } finally {
             this.lock.writeLock().unlock();
         }
 
+    }
+
+
+    /**
+     * 追加日志请求处理
+     *
+     * @param request
+     * @return
+     */
+    public AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest request) {
+
+        this.lock.writeLock().lock();
+
+        boolean stepDown = false;
+        long requestTerm = request.getTerm();
+        long commitIndex = request.getCommitIndex();
+        List<RaftLog> entries = request.getEntries();
+        long preLogIndex = request.getPreLogIndex();
+        long preLogTerm = request.getPreLogTerm();
+        String leaderId = request.getLeaderId();
+        try {
+
+            AppendEntriesResponse appendEntriesResponse = new AppendEntriesResponse();
+            // check term
+            if (this.term > requestTerm) {
+
+                appendEntriesResponse.setSuccess(false);
+                appendEntriesResponse.setTerm(this.term);
+                appendEntriesResponse.setReason(String.format("request.term %s <current.term %s", requestTerm, this.term));
+                return appendEntriesResponse;
+
+            }
+
+
+            // check my term  is old term
+            if (requestTerm > this.term) {
+                this.term = requestTerm;
+                this.leader = leaderId;
+                this.voteFor = noVoteFor;
+                stepDown = true;
+            }
+
+
+            // check i am waiting for the vote response
+            if (StringUtils.equals(RaftConstant.candidate, this.state) && StringUtils.equals(this.leader, leaderId) && requestTerm > this.term) {
+                this.term = requestTerm;
+                this.leader = leaderId;
+                stepDown = true;
+            }
+            // reset the election timeout timer
+            this.resetElectionTimeoutTimer();
+
+            //  截断本地
+            boolean sec = this.logService.truncateRaftLog(preLogIndex, preLogTerm);
+            if (!sec) {
+                appendEntriesResponse.setSuccess(false);
+                appendEntriesResponse.setTerm(this.term);
+                appendEntriesResponse.setReason(String.format("preLogIndex %s or preLogTerm %s not match", preLogIndex, preLogTerm));
+                return appendEntriesResponse;
+
+            }
+
+            this.resetElectionTimeoutTimer();
+
+            //  将日志追加到本地
+            for (RaftLog raftLog : entries) {
+                boolean success = this.logService.appendRaftLog(raftLog);
+                if (!success) {
+                    log.warn("%s append log:%s fail", getId(), raftLog);
+                    appendEntriesResponse.setSuccess(false);
+                    appendEntriesResponse.setTerm(this.term);
+                    appendEntriesResponse.setReason(String.format("append raft log fail with log:%s ", raftLog));
+                    return appendEntriesResponse;
+
+                }
+            }
+
+            long lastCommittedIndex = this.logService.getLastCommittedIndex();
+
+            if (commitIndex > 0 && commitIndex > lastCommittedIndex) {
+                // commit the log
+                this.logService.commitToIndex(lastCommittedIndex);
+                log.info(String.format("%s raft log  committed to %s index", getId(), lastCommittedIndex));
+            }
+
+            // every good
+            appendEntriesResponse.setSuccess(true);
+            appendEntriesResponse.setTerm(this.term);
+            appendEntriesResponse.setReason("append log success");
+            return appendEntriesResponse;
+        } finally {
+            if (stepDown) {
+                this.leader = leaderId;
+                this.becomeFollower();
+            }
+            this.lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -737,8 +840,8 @@ public class RaftEngine {
     private void becomeFollower() {
 
         log.info(String.format("%s become follower in  the %s term", getId(), term));
-        this.leader = noLeader;
         this.voteFor = noVoteFor;
+        this.state = follower;
         log.info(String.format("%s  stop heartbeat timer in the  %s term", getId(), term));
         this.stopHeartbeatTimer();
         log.info(String.format("%s  stop replication timer in the %s term", getId(), term));

@@ -1,6 +1,5 @@
 package com.tongbanjie.raft.test.log.peer;
 
-import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.support.DefaultRaftLogService;
@@ -8,7 +7,6 @@ import com.tongbanjie.raft.core.log.store.support.DefaultDataStore;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.test.log.BaseTest;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -25,8 +23,8 @@ public class PeerTest extends BaseTest {
     @Test
     public void testPeer() throws InterruptedException {
 
-        String servers = "127.0.0.1:9000,127.0.0.1:9001";
-        String localServer = "127.0.0.1:9002";
+        String servers = "127.0.0.1:9000";
+        String localServer = "127.0.0.1:9001";
 
 
         this.raftLogCodec = new Crc32RaftLogCodec();
@@ -50,13 +48,17 @@ public class PeerTest extends BaseTest {
         int i = 0;
         while (true) {
 
-            byte[] data = ("raft-test" + i).getBytes();
-            if (StringUtils.equals(RaftConstant.noLeader, localEngine.getLeader())) {
-                System.err.println(" not found leader ....");
-            }
-            boolean sec = localEngine.appendLogEntry(data);
-            System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
-            Thread.sleep(1000);
+//            byte[] data = ("raft-test" + i).getBytes();
+//            if (StringUtils.equals(RaftConstant.noLeader, localEngine.getLeader())) {
+//                System.err.println(" not found leader ....");
+//
+//
+//            } else {
+//                boolean sec = localEngine.appendLogEntry(data);
+//                System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
+//            }
+//
+//            Thread.sleep(1000);
         }
 
 

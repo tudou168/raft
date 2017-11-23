@@ -35,10 +35,10 @@ public class RaftConstant {
     public final static int raftThreadNum = Runtime.getRuntime().availableProcessors() + 1;
 
     // 选举超时时间 最小为500毫秒
-    public final static int electionTimeoutMs = 1000;
+    public final static int electionTimeoutMs = 5000;
 
     //  心跳时间间隔
-    public final static int heartbeatIntervalTimeMs = 300;
+    public final static int heartbeatIntervalTimeMs = 1000;
 
     // 追加日志最大等待时间
     public final static int waitForMaxTimeMs = 3000;

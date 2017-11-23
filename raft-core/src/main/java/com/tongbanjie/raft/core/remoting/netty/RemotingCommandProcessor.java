@@ -46,8 +46,7 @@ public class RemotingCommandProcessor {
     }
 
     /**
-     * 追加
-     *
+     *  追加日志
      * @param ctx
      * @param msg
      */
