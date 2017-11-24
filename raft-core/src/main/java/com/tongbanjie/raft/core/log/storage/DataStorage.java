@@ -1,11 +1,11 @@
-package com.tongbanjie.raft.core.log.store;
+package com.tongbanjie.raft.core.log.storage;
 
 /***
  *raft log 存储接口
  * @author banxia
  * @date 2017-11-14 17:17:43
  */
-public interface DataStore {
+public interface DataStorage {
 
 
     /***

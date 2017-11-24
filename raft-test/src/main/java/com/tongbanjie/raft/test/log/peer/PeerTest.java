@@ -3,7 +3,7 @@ package com.tongbanjie.raft.test.log.peer;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.support.DefaultRaftLogService;
-import com.tongbanjie.raft.core.log.store.support.DefaultDataStore;
+import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.test.log.BaseTest;
@@ -27,7 +27,7 @@ public class PeerTest extends BaseTest {
         String servers = "127.0.0.1:7001";
 
         Crc32RaftLogCodec crc32RaftLogCodec = new Crc32RaftLogCodec();
-        DefaultDataStore defaultDataStore = new DefaultDataStore("/Users/banxia/Desktop/wp/" + localServer, "raft");
+        DefaultDataStorage defaultDataStore = new DefaultDataStorage("/Users/banxia/Desktop/wp/" + localServer, "raft");
         raftLogService = new DefaultRaftLogService(defaultDataStore, crc32RaftLogCodec);
         String[] serverList = servers.split(",");
         List<RaftPeer> peerList = new ArrayList<RaftPeer>();

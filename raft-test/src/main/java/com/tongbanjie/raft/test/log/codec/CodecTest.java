@@ -3,8 +3,8 @@ package com.tongbanjie.raft.test.log.codec;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
-import com.tongbanjie.raft.core.log.store.DataStore;
-import com.tongbanjie.raft.core.log.store.support.DefaultDataStore;
+import com.tongbanjie.raft.core.log.storage.DataStorage;
+import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -22,13 +22,13 @@ public class CodecTest {
     private static final Logger log = LoggerFactory.getLogger(CodecTest.class);
 
     private RaftLogCodec raftLogCodec;
-    private DataStore dataStore;
+    private DataStorage dataStorage;
 
     @Before
     public void init() {
 
         this.raftLogCodec = new Crc32RaftLogCodec();
-        this.dataStore = new DefaultDataStore("/Users/banxia/Desktop/wp", ".raft");
+        this.dataStorage = new DefaultDataStorage("/Users/banxia/Desktop/wp", ".raft");
     }
 
 
@@ -49,7 +49,7 @@ public class CodecTest {
             byte[] body = this.raftLogCodec.encode(raftLog);
             log.info(String.format("编码 log 完成..."));
             log.info(String.format("准备存储..."));
-            if (this.dataStore.writeToStore(body)) {
+            if (this.dataStorage.writeToStore(body)) {
                 log.info("写入成功...");
             } else {
                 log.info("写入失败...");
@@ -64,7 +64,7 @@ public class CodecTest {
     @Test
     public void testDecode() {
 
-        byte[] bytes = this.dataStore.readAll();
+        byte[] bytes = this.dataStorage.readAll();
         ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
         buffer.put(bytes);
         buffer.flip();

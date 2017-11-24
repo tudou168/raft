@@ -4,7 +4,7 @@ import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
-import com.tongbanjie.raft.core.log.store.DataStore;
+import com.tongbanjie.raft.core.log.storage.DataStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ public class DefaultRaftLogService implements RaftLogService {
 
     private Lock lock = new ReentrantLock();
     //  数据存储
-    private DataStore dataStore;
+    private DataStorage dataStorage;
 
     //  raft 日志编码解码器
     private RaftLogCodec codec;
@@ -38,8 +38,8 @@ public class DefaultRaftLogService implements RaftLogService {
     private int committedPos = -1;
 
 
-    public DefaultRaftLogService(DataStore dataStore, RaftLogCodec codec) {
-        this.dataStore = dataStore;
+    public DefaultRaftLogService(DataStorage dataStorage, RaftLogCodec codec) {
+        this.dataStorage = dataStorage;
         this.codec = codec;
         this.raftLogs = new ArrayList<RaftLog>();
         //  执行日志恢复
@@ -51,7 +51,7 @@ public class DefaultRaftLogService implements RaftLogService {
      */
     private void recover() {
 
-        byte[] bytes = this.dataStore.readAll();
+        byte[] bytes = this.dataStorage.readAll();
         if (bytes.length == 0) return;
 
         ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
@@ -375,7 +375,7 @@ public class DefaultRaftLogService implements RaftLogService {
 
                 //  写入存储 raft 日志
                 byte[] body = this.codec.encode(this.raftLogs.get(pos));
-                this.dataStore.writeToStore(body);
+                this.dataStorage.writeToStore(body);
 
                 this.committedPos = pos;
 
