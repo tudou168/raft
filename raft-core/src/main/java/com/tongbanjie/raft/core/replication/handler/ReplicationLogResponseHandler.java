@@ -11,5 +11,5 @@ import com.tongbanjie.raft.core.protocol.ReplicationLogResponseTuple;
  */
 public interface ReplicationLogResponseHandler {
 
-    void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex);
+    void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex, Long staticsId);
 }

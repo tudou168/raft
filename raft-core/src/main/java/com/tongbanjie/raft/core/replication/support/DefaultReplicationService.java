@@ -31,7 +31,7 @@ public class DefaultReplicationService implements ReplicationService {
     }
 
 
-    public void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler) {
+    public void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler, Long staticsId) {
 
 
         ReplicationLogResponseTuple tuple = new ReplicationLogResponseTuple();
@@ -45,6 +45,6 @@ public class DefaultReplicationService implements ReplicationService {
             tuple.setReason(e.getMessage());
         }
 
-        replicationLogResponseHandler.handler(peer, tuple, nextIndex);
+        replicationLogResponseHandler.handler(peer, tuple, nextIndex, staticsId);
     }
 }

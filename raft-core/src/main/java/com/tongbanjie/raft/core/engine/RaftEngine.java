@@ -13,6 +13,7 @@ import com.tongbanjie.raft.core.protocol.*;
 import com.tongbanjie.raft.core.replication.ReplicationService;
 import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandler;
 import com.tongbanjie.raft.core.replication.support.DefaultReplicationService;
+import com.tongbanjie.raft.core.util.RequestIdGenerator;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +66,6 @@ public class RaftEngine {
 
     private ReplicationService replicationService;
 
-    //  raft 引擎运行状态
-    private AtomicInteger running;
-
     //  任务执行线程池
     private ExecutorService executorService;
 
@@ -100,13 +98,11 @@ public class RaftEngine {
     //  投票列表
     private ConcurrentHashMap<String, Boolean> votes = new ConcurrentHashMap<String, Boolean>();
 
-    /***
-     *  统计并发刷新日志状态
-     */
-    private ConcurrentHashMap<String, Boolean> statistics = new ConcurrentHashMap<String, Boolean>();
 
-    // 开始统计标识
-    private boolean startStatistic;
+    /**
+     * 统计各个 peer 日志刷新同步状态
+     */
+    private ConcurrentHashMap<Long, ConcurrentHashMap<String, Boolean>> appendStatistics = new ConcurrentHashMap<Long, ConcurrentHashMap<String, Boolean>>();
 
 
     public RaftEngine(String id, RaftLogService logService) {
@@ -244,9 +240,9 @@ public class RaftEngine {
     /***
      * 追加日志
      *
-     * @return true 成功 false 失败
+     *
      */
-    public boolean appendLogEntry(byte[] data) {
+    public void appendLogEntry(byte[] data) {
 
 
         this.lock.writeLock().lock();
@@ -256,9 +252,8 @@ public class RaftEngine {
 
             if (!StringUtils.equals(RaftConstant.leader, this.state)) {
                 log.warn(String.format("%s is not leader !", getId()));
-                return false;
+                return;
             }
-            this.statistics = new ConcurrentHashMap<String, Boolean>();
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
             RaftLog raftLog = new RaftLog();
@@ -267,25 +262,13 @@ public class RaftEngine {
             raftLog.setIndex(lastIndex);
             //  首先将追加到本地日志中
             this.logService.appendRaftLog(raftLog);
-            this.statistics.put(this.getId(), true);
-            this.waitForDoneCondition.await(RaftConstant.waitForMaxTimeMs, TimeUnit.MILLISECONDS);
-            long lastCommittedIndex = this.logService.getLastCommittedIndex();
-            if (lastCommittedIndex < lastIndex) {
-                //  TODO 要更换其他方式实现
-//                log.warn(String.format("%s append log entry fail ", getId()));
-                return false;
-            }
-
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
-            return false;
+            throw new RaftException(e.getMessage(), e);
         } finally {
             this.lock.writeLock().unlock();
-            this.startStatistic = false;
         }
-        return true;
+
 
     }
 
@@ -519,6 +502,15 @@ public class RaftEngine {
     private void concurrentReplication(List<RaftPeer> recipients) {
 
 
+        final long staticsId = RequestIdGenerator.getRequestId();
+        this.appendStatistics.remove(staticsId);
+        this.appendStatistics.put(staticsId, new ConcurrentHashMap<String, Boolean>());
+        ConcurrentHashMap<String, Boolean> statisticsList = this.appendStatistics.get(staticsId);
+
+        //  自己已经追加
+        statisticsList.put(getId(), true);
+
+
         for (final RaftPeer raftPeer : recipients) {
 
             long term = this.getTerm();
@@ -537,7 +529,7 @@ public class RaftEngine {
             this.executorService.submit(new Runnable() {
                 public void run() {
                     //发送请求
-                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request));
+                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request), staticsId);
                 }
             });
         }
@@ -784,10 +776,15 @@ public class RaftEngine {
             this.request = request;
         }
 
-        public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex) {
+        public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex, Long staticsId) {
             log.info(String.format("%s replication response handler %s,response %s", getId(), peer.getId(), tuple));
 
             lock.writeLock().lock();
+
+            ConcurrentHashMap<String, Boolean> staticsList = appendStatistics.get(staticsId);
+            if (staticsList != null) {
+                staticsList.put(peer.getId(), false);
+            }
 
             try {
                 long preLogIndex = request.getPreLogIndex();
@@ -813,14 +810,14 @@ public class RaftEngine {
 
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
 
-                        statistics.putIfAbsent(peer.getId(), true);
-                        if (configuration.pass(statistics)) {
+                        if (staticsList != null) {
+                            staticsList.put(peer.getId(), true);
+                        }
+                        if (configuration.pass(staticsList)) {
                             long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
                             log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
                             // 提交本地日志
                             logService.commitToIndex(commitIndex);
-                            // 通知成功
-                            waitForDoneCondition.signalAll();
                         }
 
                         nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
@@ -832,6 +829,11 @@ public class RaftEngine {
                 // continue
 
             } finally {
+
+
+                if (staticsList != null && staticsList.size() > configuration.getAllPeers().quorum()) {
+                    appendStatistics.remove(staticsId);
+                }
                 lock.writeLock().unlock();
             }
         }
