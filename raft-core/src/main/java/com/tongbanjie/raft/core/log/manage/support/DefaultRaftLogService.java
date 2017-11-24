@@ -1,5 +1,7 @@
 package com.tongbanjie.raft.core.log.manage.support;
 
+import com.tongbanjie.raft.core.config.RaftConfiguration;
+import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.protocol.RaftLog;
@@ -39,6 +41,13 @@ public class DefaultRaftLogService implements RaftLogService {
     private int committedPos = -1;
 
 
+    private RaftConfiguration config;
+
+
+    public void setConfiguration(RaftConfiguration config) {
+        this.config = config;
+    }
+
     public DefaultRaftLogService(DataStorage dataStorage, RaftLogCodec codec) {
         this.dataStorage = dataStorage;
         this.codec = codec;
@@ -65,8 +74,11 @@ public class DefaultRaftLogService implements RaftLogService {
 
                 //  解码
                 RaftLog raftLog = this.codec.decode(buffer);
+
                 //  追加日志
                 this.appendRaftLog(raftLog);
+
+                log.debug(">>>>>>>>>>>>recover raft log:" + raftLog);
                 this.committedPos++;
 
             } catch (Exception e) {
@@ -91,7 +103,7 @@ public class DefaultRaftLogService implements RaftLogService {
         this.lock.lock();
 
         try {
-
+            log.debug(">>>>>>>>>>>>append raft log :" + raftLog);
             if (this.raftLogs.isEmpty()) {
                 this.raftLogs.add(raftLog);
             } else {
@@ -374,10 +386,16 @@ public class DefaultRaftLogService implements RaftLogService {
                     break;
                 }
 
+
                 //  写入存储 raft 日志
                 byte[] body = this.codec.encode(this.raftLogs.get(pos));
                 this.dataStorage.writeToStore(body);
 
+                // if configuration log
+                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION.getValue()) {
+
+                    this.config.commitConfigurationTo();
+                }
                 // apply  listener notify
                 LogApplyListener applyListener = this.raftLogs.get(pos).getApplyListener();
                 if (applyListener != null) {

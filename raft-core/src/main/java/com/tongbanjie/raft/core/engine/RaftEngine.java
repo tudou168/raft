@@ -118,6 +118,7 @@ public class RaftEngine {
         this.electionService = new DefaultRaftElectionService(this);
         this.replicationService = new DefaultReplicationService(this);
         this.config = new RaftConfiguration();
+        this.logService.setConfiguration(this.config);
     }
 
 
@@ -162,11 +163,23 @@ public class RaftEngine {
                 log.warn(String.format("%s is not leader !", getId()));
                 return;
             }
-            this.config.changeTo(cluster);
+
             final List<String> peers = new ArrayList<String>();
             for (RaftPeer peer : cluster.explode()) {
+                RaftPeer p = this.config.get(peer.getId());
+                if (p != null) {
+                    log.warn(String.format("the %s has already  in the configuration list", peer.getId()));
+                    continue;
+                }
+
                 peers.add(peer.getId());
             }
+            //  if has no new peer
+            if (peers.isEmpty()) {
+                changeListener.notify(this.config.getAllPeers().explode());
+                return;
+            }
+
             String peerStrs = JSON.toJSONString(peers);
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
@@ -178,7 +191,10 @@ public class RaftEngine {
                     changeListener.notify(cluster.explode());
                 }
             });
+            // append local configuration
             this.logService.appendRaftLog(raftLog);
+            //  first append local configuration
+            this.config.changeTo(cluster);
 
         } finally {
             this.lock.writeLock().unlock();
@@ -267,11 +283,16 @@ public class RaftEngine {
         ElectionRequest electionRequest = null;
         try {
 
+
             electionRequest = new ElectionRequest();
-            electionRequest.setLastLogTerm(this.logService.getLastTerm());
+            long lastTerm = this.logService.getLastTerm();
+            electionRequest.setLastLogTerm(lastTerm);
             electionRequest.setCandidateId(this.id);
-            electionRequest.setLastLogIndex(this.logService.getLastIndex());
+            long lastIndex = this.logService.getLastIndex();
+            electionRequest.setLastLogIndex(lastIndex);
             electionRequest.setTerm(term);
+            log.debug(getId() + "***** lastTerm:--->" + lastTerm + ",lastIndex:--->" + lastIndex + "******>>>>electionRequest:" + electionRequest);
+            log.debug(getId() + "********logs****" + this.logService.getRaftLogList());
 
         } finally {
 
@@ -303,7 +324,7 @@ public class RaftEngine {
         this.lock.writeLock().lock();
 
         try {
-            log.info(String.format("%s into append log entry ...", getId()));
+            log.debug(String.format("%s into append log entry ...", getId()));
 
             if (!StringUtils.equals(RaftConstant.leader, this.state)) {
                 log.warn(String.format("%s is not leader !", getId()));
@@ -312,10 +333,7 @@ public class RaftEngine {
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
             RaftLog raftLog = new RaftLog(lastIndex, term, RaftLogType.DATA.getValue(), data, applyListener);
-            raftLog.setTerm(term);
-            raftLog.setContent(data);
             raftLog.setApplyListener(applyListener);
-            raftLog.setIndex(lastIndex);
             //  首先将追加到本地日志中
             this.logService.appendRaftLog(raftLog);
         } catch (Exception e) {
@@ -515,7 +533,7 @@ public class RaftEngine {
             appendEntriesResponse.setSuccess(true);
             appendEntriesResponse.setTerm(this.term);
             appendEntriesResponse.setReason("append log success");
-            log.info("***********************append log success**********************");
+            log.debug("***********************append log success**********************");
             return appendEntriesResponse;
         } finally {
             if (stepDown) {
@@ -532,7 +550,7 @@ public class RaftEngine {
     private void startConcurrentReplication() {
 
         this.lock.readLock().lock();
-        log.info(String.format(">>>>>>>>>>%s concurrent replication log...<<<<<<<<<<", getId()));
+        log.debug(String.format(">>>>>>>>>>%s concurrent replication log...<<<<<<<<<<", getId()));
         List<RaftPeer> recipients;
         try {
             recipients = this.config.getAllPeers().expect(getId()).explode();
@@ -550,7 +568,7 @@ public class RaftEngine {
 
             return;
         }
-        log.info(String.format("%s start concurrent replication log to other peers...", getId()));
+        log.debug(String.format("%s start concurrent replication log to other peers...", getId()));
         concurrentReplication(recipients);
 
     }
@@ -736,7 +754,7 @@ public class RaftEngine {
         public void handler(RaftPeer raftPeer, ElectionResponseTuple tuple) {
 
             lock.writeLock().lock();
-            log.info(String.format("election vote response:%s", tuple));
+            log.debug(String.format("election vote response:%s", tuple));
 
             try {
 
@@ -806,7 +824,7 @@ public class RaftEngine {
             state = RaftConstant.leader;
             voteFor = noVoteFor;
             leader = id;
-            log.info(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
+            log.debug(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
             log.info(String.format(">>>>>>>>>>>%s start send heartbeat schedule timer.....<<<<<<<<<<", getId()));

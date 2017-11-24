@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.log.manage;
 
+import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 
 import java.util.List;
@@ -93,6 +94,9 @@ public interface RaftLogService {
      * @return
      */
     List<RaftLog> getRaftLogList();
+
+
+    void setConfiguration(RaftConfiguration config);
 
 
 }

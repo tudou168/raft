@@ -37,7 +37,7 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
         offset += 8;
 
         // term
-        ByteUtil.long2bytes(raftLog.getIndex(), header, offset);
+        ByteUtil.long2bytes(raftLog.getTerm(), header, offset);
         offset += 8;
 
         //  log type
@@ -96,7 +96,7 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
         // term
         long term = ByteUtil.bytes2long(header, offset);
         offset += 8;
-        // body_length
+        // type
         int type = ByteUtil.bytes2int(header, offset);
         offset += 4;
         // body_length

@@ -41,7 +41,7 @@ public class CodecTest {
 
         for (int i = 0; i < 100; i++) {
 
-            RaftLog raftLog = new RaftLog(i, i + 1, RaftLogType.DATA.getValue(), "内容".getBytes(), null);
+            RaftLog raftLog = new RaftLog(i, 10, RaftLogType.DATA.getValue(), "内容".getBytes(), null);
             log.info(String.format("准备编码 log:%s ...", raftLog));
             byte[] body = this.raftLogCodec.encode(raftLog);
             log.info(String.format("编码 log 完成..."));
