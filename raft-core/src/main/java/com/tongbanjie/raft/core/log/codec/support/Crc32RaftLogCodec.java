@@ -18,25 +18,31 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
 
     /***
      * 编码格式:
-     *       ---------------------------------------------
-     *		| uint64 | uint64 | uint64 | uint32 | []byte  |
-     *		 ---------------------------------------------
-     *		| CRC    | TERM   | INDEX  | SIZE   | CONTENT |
-     *		 ---------------------------------------------
+     *       -----------------------------------------------------
+     *		| uint64 | uint64 | uint64 | uint32 | uint32 | []byte |
+     *		 ------------------------------------------------------
+     *		| CRC    | TERM   | INDEX  |   TYPE   | SIZE | CONTENT |
+     *		 ------------------------------------------------------
      * @param raftLog raft 日志实体
      * @return
      */
     public byte[] encode(RaftLog raftLog) {
 
         byte[] content = raftLog.getContent();
-        byte[] header = new byte[20];
+        byte[] header = new byte[24];
         int offset = 0;
+
         // index
         ByteUtil.long2bytes(raftLog.getIndex(), header, offset);
         offset += 8;
+
         // term
         ByteUtil.long2bytes(raftLog.getIndex(), header, offset);
         offset += 8;
+
+        //  log type
+        ByteUtil.int2bytes(raftLog.getType(), header, offset);
+        offset += 4;
 
         //  content length
         ByteUtil.int2bytes(content.length, header, offset);
@@ -66,17 +72,18 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
     /**
      * 解码
      * 格式:
-     * ---------------------------------------------
-     * | uint64 | uint64 | uint64 | uint32 | []byte  |
-     * ---------------------------------------------
-     * | CRC    | TERM   | INDEX  | SIZE   | CONTENT |
+     * -----------------------------------------------------
+     * | uint64 | uint64 | uint64 | uint32 | uint32 | []byte |
+     * ------------------------------------------------------
+     * | CRC    | TERM   | INDEX  |   TYPE   | SIZE | CONTENT |
+     * ------------------------------------------------------
      *
      * @param buffer
      * @return
      */
     public RaftLog decode(ByteBuffer buffer) {
 
-        byte[] header = new byte[28];
+        byte[] header = new byte[32];
 
         buffer.get(header);
         int offset = 0;
@@ -89,6 +96,9 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
         // term
         long term = ByteUtil.bytes2long(header, offset);
         offset += 8;
+        // body_length
+        int type = ByteUtil.bytes2int(header, offset);
+        offset += 4;
         // body_length
         int length = ByteUtil.bytes2int(header, offset);
         offset += 4;
@@ -114,11 +124,7 @@ public class Crc32RaftLogCodec implements RaftLogCodec {
             throw new RaftException(String.format("index=%s,term=%s,crc=%s, sumCrc32=%s, check crc  error", index, term, crc, value));
         }
 
-        RaftLog raftLog = new RaftLog();
-        raftLog.setContent(content);
-        raftLog.setIndex(index);
-        raftLog.setTerm(term);
+        return new RaftLog(index, term, type, content, null);
 
-        return raftLog;
     }
 }

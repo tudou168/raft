@@ -1,6 +1,7 @@
 package com.tongbanjie.raft.core.log.manage.support;
 
 import com.tongbanjie.raft.core.exception.RaftException;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
@@ -376,6 +377,12 @@ public class DefaultRaftLogService implements RaftLogService {
                 //  写入存储 raft 日志
                 byte[] body = this.codec.encode(this.raftLogs.get(pos));
                 this.dataStorage.writeToStore(body);
+
+                // apply  listener notify
+                LogApplyListener applyListener = this.raftLogs.get(pos).getApplyListener();
+                if (applyListener != null) {
+                    applyListener.notify(pos, this.raftLogs.get(pos));
+                }
 
                 this.committedPos = pos;
 

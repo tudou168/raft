@@ -2,8 +2,10 @@ package com.tongbanjie.raft.test.log.engine;
 
 import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.engine.RaftEngine;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
+import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.test.log.BaseTest;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
@@ -36,7 +38,7 @@ public class MainTest extends BaseTest {
             raftPeers.add(peer);
         }
 
-        raftEngine.setPeers(raftPeers);
+        raftEngine.setConfiguration(raftPeers);
 
         raftEngine.bootstrap();
 
@@ -48,8 +50,11 @@ public class MainTest extends BaseTest {
             if (StringUtils.equals(RaftConstant.noLeader, raftEngine.getLeader())) {
                 System.err.println(" not found leader ....");
             }
-            boolean sec = raftEngine.appendLogEntry(data);
-            System.err.println(">>>>>>>>>>>>>>append log entry " + sec + " <<<<<<<<<<<<<");
+            raftEngine.appendLogEntry(data, new LogApplyListener() {
+                public void notify(long commitIndex, RaftLog raftLog) {
+                    System.err.println("===========commit index=" + commitIndex + "raftLog=" + raftLog);
+                }
+            });
             Thread.sleep(1000);
         }
 

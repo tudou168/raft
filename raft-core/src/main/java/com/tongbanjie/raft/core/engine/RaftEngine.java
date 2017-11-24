@@ -5,7 +5,9 @@ import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.election.RaftElectionService;
 import com.tongbanjie.raft.core.election.handler.ElectionResponseHandler;
 import com.tongbanjie.raft.core.election.support.DefaultRaftElectionService;
+import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.exception.RaftException;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
@@ -57,7 +59,7 @@ public class RaftEngine {
     private long term;
 
     //  raft 配置
-    private RaftConfiguration configuration;
+    private RaftConfiguration config;
 
     //  raft 日志服务
     private RaftLogService logService;
@@ -113,7 +115,7 @@ public class RaftEngine {
     }
 
 
-    public void setPeers(List<RaftPeer> peers) {
+    public void setConfiguration(List<RaftPeer> peers) {
 
         if (peers == null || peers.isEmpty()) {
             throw new RaftException("peers is not allow null");
@@ -128,7 +130,7 @@ public class RaftEngine {
 
         cluster.setPeers(raftPeerMap);
 
-        this.configuration = new RaftConfiguration(cluster);
+        this.config = new RaftConfiguration(cluster);
 
     }
 
@@ -137,7 +139,7 @@ public class RaftEngine {
      */
     public void bootstrap() {
 
-        if (this.configuration.getAllPeers().size() == 0) {
+        if (this.config.getAllPeers().size() == 0) {
             throw new RaftException("raft peers not allow null!");
         }
         initEngine();
@@ -186,7 +188,7 @@ public class RaftEngine {
         }
 
 
-        List<RaftPeer> peers = this.configuration.getAllPeers().expect(this.id).explode();
+        List<RaftPeer> peers = this.config.getAllPeers().expect(this.id).explode();
         if (peers == null || peers.size() == 0) return;
 
         for (final RaftPeer peer : peers) {
@@ -233,7 +235,7 @@ public class RaftEngine {
     private void startHeartbeat() {
 
         log.info(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
-        this.appendLogEntry("heartbeat".getBytes());
+        this.appendLogEntry("heartbeat".getBytes(), null);
     }
 
 
@@ -242,7 +244,7 @@ public class RaftEngine {
      *
      *
      */
-    public void appendLogEntry(byte[] data) {
+    public void appendLogEntry(byte[] data, LogApplyListener applyListener) {
 
 
         this.lock.writeLock().lock();
@@ -256,9 +258,10 @@ public class RaftEngine {
             }
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
-            RaftLog raftLog = new RaftLog();
+            RaftLog raftLog = new RaftLog(lastIndex, term, RaftLogType.DATA.getValue(), data, applyListener);
             raftLog.setTerm(term);
             raftLog.setContent(data);
+            raftLog.setApplyListener(applyListener);
             raftLog.setIndex(lastIndex);
             //  首先将追加到本地日志中
             this.logService.appendRaftLog(raftLog);
@@ -479,7 +482,7 @@ public class RaftEngine {
         log.info(String.format(">>>>>>>>>>%s concurrent replication log...<<<<<<<<<<", getId()));
         List<RaftPeer> recipients;
         try {
-            recipients = this.configuration.getAllPeers().expect(getId()).explode();
+            recipients = this.config.getAllPeers().expect(getId()).explode();
         } finally {
             this.lock.readLock().unlock();
         }
@@ -650,7 +653,7 @@ public class RaftEngine {
      * 初始化 peer next index 集合
      */
     private void initNextIndex() {
-        this.nextIndexList = new NextIndex(this.configuration.getAllPeers().expect(getId()).explode(), this.logService.getLastIndex());
+        this.nextIndexList = new NextIndex(this.config.getAllPeers().expect(getId()).explode(), this.logService.getLastIndex());
 
     }
 
@@ -725,7 +728,7 @@ public class RaftEngine {
                     }
 
                     //  获得大多数投票人的认可
-                    if (configuration.pass(votes)) { // my win
+                    if (config.pass(votes)) { // my win
 
                         log.info(String.format(">>>>>>>>>>%s I won the election in the %s term...<<<<<<<<<<", getId(), term));
                         this.becomeLeader();
@@ -813,7 +816,7 @@ public class RaftEngine {
                         if (staticsList != null) {
                             staticsList.put(peer.getId(), true);
                         }
-                        if (configuration.pass(staticsList)) {
+                        if (config.pass(staticsList)) {
                             long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
                             log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
                             // 提交本地日志
@@ -831,7 +834,7 @@ public class RaftEngine {
             } finally {
 
 
-                if (staticsList != null && staticsList.size() > configuration.getAllPeers().quorum()) {
+                if (staticsList != null && staticsList.size() > config.getAllPeers().quorum()) {
                     appendStatistics.remove(staticsId);
                 }
                 lock.writeLock().unlock();

@@ -41,7 +41,7 @@ public class PeerTest extends BaseTest {
         localPeer.setRaftEngine(localEngine);
         localPeer.registerServer();
         peerList.add(localPeer);
-        localEngine.setPeers(peerList);
+        localEngine.setConfiguration(peerList);
         localEngine.bootstrap();
 
         int i = 0;

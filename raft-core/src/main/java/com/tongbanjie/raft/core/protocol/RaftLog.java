@@ -1,5 +1,7 @@
 package com.tongbanjie.raft.core.protocol;
 
+import com.tongbanjie.raft.core.enums.RaftLogType;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -20,15 +22,24 @@ public class RaftLog {
     // 日志
     private byte[] content;
 
+    /**
+     * type
+     *
+     * @see RaftLogType
+     */
+    private Integer type;
 
-    public RaftLog() {
 
-    }
+    // the log apply listener
+    private LogApplyListener applyListener;
 
-    public RaftLog(long index, long term, byte[] content) {
+
+    public RaftLog(long index, long term, Integer type, byte[] content, LogApplyListener applyListener) {
         this.index = index;
         this.term = term;
         this.content = content;
+        this.type = type;
+        this.applyListener = applyListener;
     }
 
     public long getIndex() {
@@ -55,10 +66,25 @@ public class RaftLog {
         this.content = content;
     }
 
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
+    }
+
+    public LogApplyListener getApplyListener() {
+        return applyListener;
+    }
+
+    public void setApplyListener(LogApplyListener applyListener) {
+        this.applyListener = applyListener;
+    }
 
     public RaftLog createCopy() {
 
-        return new RaftLog(this.index, this.term, this.content);
+        return new RaftLog(this.index, this.term, this.type, this.content, this.applyListener);
     }
 
     @Override

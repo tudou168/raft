@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.test.log.manage;
 
+import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.protocol.RaftLog;
 import com.tongbanjie.raft.test.log.BaseTest;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class RaftManageTest extends BaseTest {
 
         // append wrong log
         log.info(">>>>>>>>>>>开始追加错误日志<<<<<<<<<<<<<<<<<<");
-        RaftLog raftLog = new RaftLog(-1, 1, "错误的内容".getBytes());
+        RaftLog raftLog = new RaftLog(-1, 1, RaftLogType.DATA.getValue(), "错误的内容".getBytes(), null);
         try {
 
             raftLogService.appendRaftLog(raftLog.createCopy());
@@ -156,7 +157,6 @@ public class RaftManageTest extends BaseTest {
         long idx = raftLogListFromIndex.get(0).getIndex();
         long tem = raftLogListFromIndex.get(0).getTerm();
         raftLogService.truncateRaftLog(idx, tem);
-
         log.info(String.format(">>>>>>>>>>raft logs %s ,size %s", raftLogService.getRaftLogList(), raftLogService.getRaftLogList().size()));
     }
 
