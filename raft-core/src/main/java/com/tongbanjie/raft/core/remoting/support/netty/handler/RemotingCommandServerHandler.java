@@ -1,9 +1,7 @@
-package com.tongbanjie.raft.core.remoting.netty.handler;
+package com.tongbanjie.raft.core.remoting.support.netty.handler;
 
-import com.alibaba.fastjson.JSON;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
-import com.tongbanjie.raft.core.protocol.ElectionRequest;
-import com.tongbanjie.raft.core.remoting.netty.RemotingCommandProcessor;
+import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

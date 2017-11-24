@@ -1,14 +1,14 @@
-package com.tongbanjie.raft.core.remoting.netty;
+package com.tongbanjie.raft.core.remoting.support.netty;
 
 import com.tongbanjie.raft.core.enums.RemotingChannelState;
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
-import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.*;
-import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandDecoder;
-import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandEncoder;
-import com.tongbanjie.raft.core.remoting.netty.handler.heartbeat.HeartbeatClientHandler;
-import com.tongbanjie.raft.core.remoting.netty.handler.RemotingCommandClientHandler;
-import com.tongbanjie.raft.core.util.RequestIdGenerator;
+import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandDecoder;
+import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandEncoder;
+import com.tongbanjie.raft.core.remoting.future.support.NettyResponseFuture;
+import com.tongbanjie.raft.core.remoting.support.netty.handler.heartbeat.HeartbeatClientHandler;
+import com.tongbanjie.raft.core.remoting.support.netty.handler.RemotingCommandClientHandler;
+import com.tongbanjie.raft.core.remoting.support.AbstractRemotingClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -165,7 +165,7 @@ public class NettyClient extends AbstractRemotingClient {
                         ch.pipeline().addLast(new RemotingCommandEncoder());
                         ch.pipeline().addLast(new RemotingCommandDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFF_SET, LENGTH_FIELD_LENGTH));
                         ch.pipeline().addLast(new IdleStateHandler(0, 0, 5));
-                        ch.pipeline().addLast(new RemotingCommandClientHandler(NettyClient.this, new MessageHandler() {
+                        ch.pipeline().addLast(new RemotingCommandClientHandler(NettyClient.this, new RemotingClientHandler() {
                             public void handler(RemotingChannel channel, Object msg) {
                                 RemotingCommand command = (RemotingCommand) msg;
                                 NettyResponseFuture responseFuture = NettyClient.this.removeNettyResponseFuture(command.getRequestId());

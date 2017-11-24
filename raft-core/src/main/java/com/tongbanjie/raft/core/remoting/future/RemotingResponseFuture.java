@@ -1,4 +1,6 @@
-package com.tongbanjie.raft.core.remoting;
+package com.tongbanjie.raft.core.remoting.future;
+
+import com.tongbanjie.raft.core.remoting.RemotingCommand;
 
 /***
  *

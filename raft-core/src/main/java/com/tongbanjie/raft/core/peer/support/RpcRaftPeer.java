@@ -13,13 +13,12 @@ import com.tongbanjie.raft.core.protocol.ElectionResponse;
 import com.tongbanjie.raft.core.remoting.RemotingClient;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.remoting.RemotingServer;
-import com.tongbanjie.raft.core.remoting.netty.NettyClient;
-import com.tongbanjie.raft.core.remoting.netty.NettyServer;
-import com.tongbanjie.raft.core.remoting.netty.RemotingCommandProcessor;
+import com.tongbanjie.raft.core.remoting.support.netty.NettyClient;
+import com.tongbanjie.raft.core.remoting.support.netty.NettyServer;
+import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
 
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 /***
  * 基于rpc方式的 raft peer

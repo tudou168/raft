@@ -38,7 +38,7 @@ public class MainTest extends BaseTest {
             raftPeers.add(peer);
         }
 
-        raftEngine.setConfiguration(raftPeers);
+        raftEngine.setConfiguration(raftPeers, null);
 
         raftEngine.bootstrap();
 

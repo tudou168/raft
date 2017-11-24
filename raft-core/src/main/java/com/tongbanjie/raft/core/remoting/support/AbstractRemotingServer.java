@@ -1,6 +1,7 @@
-package com.tongbanjie.raft.core.remoting;
+package com.tongbanjie.raft.core.remoting.support;
 
 import com.tongbanjie.raft.core.enums.RemotingChannelState;
+import com.tongbanjie.raft.core.remoting.RemotingServer;
 
 /***
  *

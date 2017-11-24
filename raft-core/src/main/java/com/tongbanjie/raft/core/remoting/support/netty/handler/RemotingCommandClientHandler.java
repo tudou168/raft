@@ -1,7 +1,7 @@
-package com.tongbanjie.raft.core.remoting.netty.handler;
+package com.tongbanjie.raft.core.remoting.support.netty.handler;
 
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
-import com.tongbanjie.raft.core.remoting.MessageHandler;
+import com.tongbanjie.raft.core.remoting.RemotingClientHandler;
 import com.tongbanjie.raft.core.remoting.RemotingChannel;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,13 +19,13 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
     private final static Logger log = LoggerFactory.getLogger(RemotingCommandClientHandler.class);
 
     private RemotingChannel remotingChannel;
-    private MessageHandler messageHandler;
+    private RemotingClientHandler remotingClientHandler;
 
 
-    public RemotingCommandClientHandler(RemotingChannel remotingChannel, MessageHandler messageHandler) {
+    public RemotingCommandClientHandler(RemotingChannel remotingChannel, RemotingClientHandler remotingClientHandler) {
 
         this.remotingChannel = remotingChannel;
-        this.messageHandler = messageHandler;
+        this.remotingClientHandler = remotingClientHandler;
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
@@ -35,7 +35,7 @@ public class RemotingCommandClientHandler extends SimpleChannelInboundHandler<Re
         }
 
         if (msg.getCommandType() != RemotingCommandType.HEARTBEAT.getValue()) {
-            this.messageHandler.handler(this.remotingChannel, msg);
+            this.remotingClientHandler.handler(this.remotingChannel, msg);
         }
 
 

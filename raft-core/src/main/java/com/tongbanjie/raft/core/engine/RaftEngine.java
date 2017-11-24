@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.engine;
 
+import com.alibaba.fastjson.JSON;
 import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.election.RaftElectionService;
@@ -7,6 +8,7 @@ import com.tongbanjie.raft.core.election.handler.ElectionResponseHandler;
 import com.tongbanjie.raft.core.election.support.DefaultRaftElectionService;
 import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.exception.RaftException;
+import com.tongbanjie.raft.core.listener.ConfigurationChangeListener;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
 import com.tongbanjie.raft.core.peer.RaftPeer;
@@ -21,10 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -90,8 +94,6 @@ public class RaftEngine {
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private Condition waitForDoneCondition = lock.writeLock().newCondition();
-
     private SecureRandom random = new SecureRandom();
 
     //  用于保存各个 peer 刷新的索引号
@@ -99,6 +101,9 @@ public class RaftEngine {
 
     //  投票列表
     private ConcurrentHashMap<String, Boolean> votes = new ConcurrentHashMap<String, Boolean>();
+
+
+    private AtomicBoolean running = new AtomicBoolean(false);
 
 
     /**
@@ -112,14 +117,16 @@ public class RaftEngine {
         this.logService = logService;
         this.electionService = new DefaultRaftElectionService(this);
         this.replicationService = new DefaultReplicationService(this);
+        this.config = new RaftConfiguration();
     }
 
 
-    public void setConfiguration(List<RaftPeer> peers) {
+    public void setConfiguration(List<RaftPeer> peers, ConfigurationChangeListener changeListener) {
 
         if (peers == null || peers.isEmpty()) {
             throw new RaftException("peers is not allow null");
         }
+
         RaftPeerCluster cluster = new RaftPeerCluster();
         Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
 
@@ -127,12 +134,58 @@ public class RaftEngine {
 
             raftPeerMap.put(raftPeer.getId(), raftPeer);
         }
-
         cluster.setPeers(raftPeerMap);
+        //  是否正在运行
+        if (!this.running.get()) {
+            this.config.directSetPeers(cluster);
+            return;
+        }
+        // other
+        this.changeConfiguration(cluster, changeListener);
 
-        this.config = new RaftConfiguration(cluster);
 
     }
+
+    /**
+     * set new configuration
+     *
+     * @param cluster
+     */
+    private void changeConfiguration(final RaftPeerCluster cluster, final ConfigurationChangeListener changeListener) {
+
+        this.lock.writeLock().lock();
+
+
+        try {
+
+            if (!StringUtils.equals(RaftConstant.leader, this.state)) {
+                log.warn(String.format("%s is not leader !", getId()));
+                return;
+            }
+            this.config.changeTo(cluster);
+            final List<String> peers = new ArrayList<String>();
+            for (RaftPeer peer : cluster.explode()) {
+                peers.add(peer.getId());
+            }
+            String peerStrs = JSON.toJSONString(peers);
+            long lastIndex = this.logService.getLastIndex();
+            lastIndex = lastIndex + 1;
+
+            byte[] content = peerStrs.getBytes();
+            RaftLog raftLog = new RaftLog(lastIndex, term, RaftLogType.CONFIGURATION.getValue(), content, new LogApplyListener() {
+
+                public void notify(long commitIndex, RaftLog raftLog) {
+                    changeListener.notify(cluster.explode());
+                }
+            });
+            this.logService.appendRaftLog(raftLog);
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+
+    }
+
 
     /***
      * 启动
@@ -143,6 +196,7 @@ public class RaftEngine {
             throw new RaftException("raft peers not allow null!");
         }
         initEngine();
+        this.running.set(true);
     }
 
     /**
@@ -158,7 +212,6 @@ public class RaftEngine {
         this.refreshScheduledExecutorService = Executors.newScheduledThreadPool(2);
         this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
         this.resetElectionTimeoutTimer();
-
         log.info(String.format("raft %s start success...", getId()));
 
     }

@@ -1,8 +1,8 @@
-package com.tongbanjie.raft.core.remoting.netty;
+package com.tongbanjie.raft.core.remoting.future.support;
 
 import com.tongbanjie.raft.core.enums.FutureState;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
-import com.tongbanjie.raft.core.remoting.RemotingResponseFuture;
+import com.tongbanjie.raft.core.remoting.future.RemotingResponseFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.remoting.netty.codec;
+package com.tongbanjie.raft.core.remoting.support.netty.codec;
 
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.util.ByteUtil;

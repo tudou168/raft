@@ -31,10 +31,8 @@ public class RaftConfiguration {
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 
 
-    public RaftConfiguration(RaftPeerCluster oldPeers) {
-        this.oldPeers = oldPeers;
-        this.newPeers = new RaftPeerCluster();
-        this.state = RaftConfigurationState.COLD.getName();
+    public RaftConfiguration() {
+
     }
 
 

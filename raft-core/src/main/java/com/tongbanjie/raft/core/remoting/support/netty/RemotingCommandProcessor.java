@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.remoting.netty;
+package com.tongbanjie.raft.core.remoting.support.netty;
 
 import com.alibaba.fastjson.JSON;
 import com.tongbanjie.raft.core.enums.RemotingCommandState;

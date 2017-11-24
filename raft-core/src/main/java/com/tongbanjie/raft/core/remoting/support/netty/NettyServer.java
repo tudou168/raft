@@ -1,12 +1,12 @@
-package com.tongbanjie.raft.core.remoting.netty;
+package com.tongbanjie.raft.core.remoting.support.netty;
 
 import com.tongbanjie.raft.core.enums.RemotingChannelState;
-import com.tongbanjie.raft.core.remoting.AbstractRemotingServer;
+import com.tongbanjie.raft.core.remoting.support.AbstractRemotingServer;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
-import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandDecoder;
-import com.tongbanjie.raft.core.remoting.netty.codec.RemotingCommandEncoder;
-import com.tongbanjie.raft.core.remoting.netty.handler.heartbeat.HeartbeatServerHandler;
-import com.tongbanjie.raft.core.remoting.netty.handler.RemotingCommandServerHandler;
+import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandDecoder;
+import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandEncoder;
+import com.tongbanjie.raft.core.remoting.support.netty.handler.heartbeat.HeartbeatServerHandler;
+import com.tongbanjie.raft.core.remoting.support.netty.handler.RemotingCommandServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;

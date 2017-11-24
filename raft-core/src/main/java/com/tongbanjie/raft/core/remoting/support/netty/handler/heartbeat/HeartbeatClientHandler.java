@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.remoting.netty.handler.heartbeat;
+package com.tongbanjie.raft.core.remoting.support.netty.handler.heartbeat;
 
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
