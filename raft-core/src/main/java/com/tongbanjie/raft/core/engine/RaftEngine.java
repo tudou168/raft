@@ -308,7 +308,7 @@ public class RaftEngine {
      */
     private void startHeartbeat() {
 
-        log.info(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
+        log.debug(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
         this.appendLogEntry("heartbeat".getBytes(), null);
     }
 
@@ -879,7 +879,12 @@ public class RaftEngine {
 
                     if (!appendEntriesResponse.isSuccess()) {
                         log.warn(String.format("%s replication log  to %s with pre log index %s fail", getId(), peer.getId(), preLogIndex));
-                        nextIndex.decrement(peer.getId(), preLogIndex);
+                        long decrement = nextIndex.decrement(peer.getId(), preLogIndex);
+                        if (decrement < 0) {
+                            // reset the big
+                            nextIndex.set(peer.getId(), logService.getLastIndex(), decrement);
+                        }
+
                     }
 
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
