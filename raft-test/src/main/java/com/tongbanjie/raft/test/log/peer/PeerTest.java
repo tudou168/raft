@@ -23,8 +23,8 @@ public class PeerTest extends BaseTest {
     @Test
     public void testPeer() throws InterruptedException {
 
-        String localServer = "127.0.0.1:7001";
-        String servers = "127.0.0.1:7002";
+        String localServer = "127.0.0.1:7003";
+        String servers = "127.0.0.1:7001,127.0.0.1:7002";
 
         Crc32RaftLogCodec crc32RaftLogCodec = new Crc32RaftLogCodec();
         DefaultDataStorage defaultDataStore = new DefaultDataStorage("/Users/banxia/Desktop/wp/" + localServer, "raft");
