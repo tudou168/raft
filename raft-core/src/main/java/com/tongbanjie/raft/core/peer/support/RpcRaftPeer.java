@@ -21,6 +21,7 @@ import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /***
  * 基于rpc方式的 raft peer
@@ -30,8 +31,6 @@ import java.util.Random;
 public class RpcRaftPeer implements RaftPeer {
 
 
-    private Random random = new Random();
-
     private RaftEngine raftEngine;
 
 
@@ -39,7 +38,6 @@ public class RpcRaftPeer implements RaftPeer {
 
 
     private RemotingClient remotingClient;
-
 
     private RemotingCommandProcessor remotingCommandProcessor = new RemotingCommandProcessor(this);
 
@@ -64,6 +62,8 @@ public class RpcRaftPeer implements RaftPeer {
     }
 
     /**
+     * 启动 peer 引擎
+     *
      * @return
      */
     public boolean bootstrap() {
@@ -72,6 +72,9 @@ public class RpcRaftPeer implements RaftPeer {
     }
 
 
+    /**
+     * 注册服务
+     */
     public void registerServer() {
 
         if (this.remotingServer == null) {
