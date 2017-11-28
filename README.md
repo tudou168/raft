@@ -1,8 +1,50 @@
 ### Raft 项目
-***
-[raft](https://raft.github.io/)
 
-####    快速开始
+
+####    1.概述
+***
+1. 官网[raft](https://raft.github.io/)
+2.日志编码格式
+```java
+
+ /***
+     * 编码格式:
+     *       -----------------------------------------------------
+     *		| uint64 | uint64 | uint64 | uint32 | uint32 | []byte |
+     *		 ------------------------------------------------------
+     *		| CRC    | TERM   | INDEX  |   TYPE   | SIZE | CONTENT |
+     *		 ------------------------------------------------------
+     * @param raftLog raft 日志实体
+     * @return
+     */
+
+```
+
+3. peer 生命周期
+
+```java
+
+
+//                                  times out,
+//                                 new election
+//     |                             .-----.
+//     |                             |     |
+//     v         times out,          |     v     receives votes from
+// +----------+  starts election  +-----------+  majority of servers  +--------+
+// | Follower |------------------>| Candidate |---------------------->| Leader |
+// +----------+                   +-----------+                       +--------+
+//     ^ ^                              |                                 |
+//     | |    discovers current leader  |                                 |
+//     | |                 or new term  |                                 |
+//     | '------------------------------'                                 |
+//     |                                                                  |
+//     |                               discovers server with higher term  |
+//     '------------------------------------------------------------------'
+//
+//
+
+```
+####    2.快速开始
 
 1.  选定要启动的 peer 节点数并配置好指定的 peer 地址及端口号启动即可。
 
@@ -40,6 +82,7 @@ public class PeerBuilderTest {
 ```
 
 2.  控制台输出
+
 ```text
 [1128 17:00:23 442 DEBUG] [pool-1-thread-3] core.engine.RaftEngine - election vote response:{"electionResponse":null,"id":"127.0.0.1:6003","success":false}
 [1128 17:00:23 456 DEBUG] [pool-1-thread-2] netty.util.Recycler - -Dio.netty.recycler.maxCapacityPerThread: 32768
@@ -65,7 +108,7 @@ public class PeerBuilderTest {
 
 ***
 
-####    todo list
+####    3.todolist
 
 1.  ~~日志模块~~
 2.  ~~配置管理模块~~
