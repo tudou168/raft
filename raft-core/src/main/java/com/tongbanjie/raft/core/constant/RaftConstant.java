@@ -40,14 +40,18 @@ public class RaftConstant {
     //  心跳时间间隔
     public final static int heartbeatIntervalTimeMs = 500;
 
-    // 追加日志最大等待时间
-    public final static int waitForMaxTimeMs = 300;
 
+    public final static String logo = "\n" +
+            "/***\n" +
+            " *      _____        __ _      __               _                  \n" +
+            " *     |  __ \\      / _| |    / _|             (_)                 \n" +
+            " *     | |__) |__ _| |_| |_  | |_ ___  _ __     _  __ ___   ____ _ \n" +
+            " *     |  _  // _` |  _| __| |  _/ _ \\| '__|   | |/ _` \\ \\ / / _` |\n" +
+            " *     | | \\ \\ (_| | | | |_  | || (_) | |      | | (_| |\\ V / (_| |\n" +
+            " *     |_|  \\_\\__,_|_|  \\__| |_| \\___/|_|      | |\\__,_| \\_/ \\__,_|\n" +
+            " *                                            _/ |                 \n" +
+            " *                                           |__/                  \n" +
+            " */\n";
 
-    public final static int version = 1;
-
-    public final static int REQUEST = 1;
-
-    public final static int RESPONSE = 2;
 
 }

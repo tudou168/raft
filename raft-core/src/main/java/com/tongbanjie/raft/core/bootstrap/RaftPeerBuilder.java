@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.bootstrap;
 
+import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
@@ -8,6 +9,8 @@ import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +26,7 @@ import java.util.List;
  * @date 2017-11-28 14:14:29
  */
 public class RaftPeerBuilder {
+
 
     //  本地服务地址
     private String localServer;
@@ -73,11 +77,11 @@ public class RaftPeerBuilder {
 
         this.checkFields();
 
+        System.out.println(RaftConstant.logo);
+
         DefaultDataStorage dataStorage = new DefaultDataStorage(this.dataStorePath, this.dataStoreFile);
 
         DefaultRaftLogService logService = new DefaultRaftLogService(dataStorage, this.logCodec);
-
-
         List<RaftPeer> raftPeers = this.buildPeers();
         RpcRaftPeer localPeer = new RpcRaftPeer(this.localServer);
         raftPeers.add(localPeer);
