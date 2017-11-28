@@ -33,6 +33,7 @@ public class PeerTest extends BaseTest {
         List<RaftPeer> peerList = new ArrayList<RaftPeer>();
         for (String server : serverList) {
             RpcRaftPeer peer = new RpcRaftPeer(server);
+
             peerList.add(peer);
         }
 

@@ -23,26 +23,21 @@ public interface RaftPeer {
     void setRaftEngine(RaftEngine raftEngine);
 
 
+    RaftEngine getRaftEngine();
+
+
+    void setRemotingServer(RemotingServer remotingServer);
+
+
     /**
-     * 注册本地服务
+     * 注册服务
      */
     void registerServer();
 
-    RaftEngine getRaftEngine();
-
     /**
-     * remoting client
-     *
-     * @return
+     * 取消注册服务
      */
-    RemotingClient getRemotingClient();
-
-    /**
-     * remoting server
-     *
-     * @return
-     */
-    RemotingServer getRemotingServer();
+    void unregisterServer();
 
     //  发起选举投票请求
     ElectionResponse electionVote(ElectionRequest request);

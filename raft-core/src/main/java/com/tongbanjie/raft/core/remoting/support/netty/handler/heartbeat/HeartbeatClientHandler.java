@@ -24,10 +24,8 @@ public class HeartbeatClientHandler extends SimpleChannelInboundHandler<Remoting
     private long heartbeatCount;
 
 
-    private RemotingChannel remotingChannel;
+    public HeartbeatClientHandler() {
 
-    public HeartbeatClientHandler(RemotingChannel remotingChannel) {
-        this.remotingChannel = remotingChannel;
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
@@ -73,6 +71,6 @@ public class HeartbeatClientHandler extends SimpleChannelInboundHandler<Remoting
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-        this.remotingChannel.doConnect();
+
     }
 }

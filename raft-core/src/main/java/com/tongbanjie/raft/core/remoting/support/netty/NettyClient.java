@@ -3,6 +3,7 @@ package com.tongbanjie.raft.core.remoting.support.netty;
 import com.tongbanjie.raft.core.enums.RemotingChannelState;
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.remoting.*;
+import com.tongbanjie.raft.core.remoting.support.AbstractRemotingPooledClient;
 import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandDecoder;
 import com.tongbanjie.raft.core.remoting.support.netty.codec.RemotingCommandEncoder;
 import com.tongbanjie.raft.core.remoting.future.support.NettyResponseFuture;
@@ -15,6 +16,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.apache.commons.pool2.PooledObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * @author banxia
  * @date 2017-11-21 15:15:10
  */
-public class NettyClient extends AbstractRemotingClient {
+public class NettyClient extends AbstractRemotingPooledClient {
 
     private final static Logger log = LoggerFactory.getLogger(NettyClient.class);
 
@@ -36,9 +38,10 @@ public class NettyClient extends AbstractRemotingClient {
 
     private final static int LENGTH_FIELD_LENGTH = 4;
 
-    private final static int TIMEOUT = 6000;
+    private int requestTimeout;
 
     private String host;
+
     private int port;
 
 
@@ -59,12 +62,22 @@ public class NettyClient extends AbstractRemotingClient {
     }
 
     private Bootstrap bootstrap;
+
     private EventLoopGroup workerGroup;
 
-    private ChannelFuture channelFuture;
+    public int getRequestTimeout() {
+        return requestTimeout;
+    }
+
+    public void setRequestTimeout(int requestTimeout) {
+        this.requestTimeout = requestTimeout;
+    }
 
     private ConcurrentHashMap<Long, NettyResponseFuture> futureMap = new ConcurrentHashMap<Long, NettyResponseFuture>();
 
+    public Bootstrap getBootstrap() {
+        return bootstrap;
+    }
 
     public void registerCallback(NettyResponseFuture nettyResponseFuture) {
 
@@ -80,75 +93,24 @@ public class NettyClient extends AbstractRemotingClient {
     }
 
 
-    public synchronized boolean open(String host, int port) {
+    public synchronized boolean open() {
 
 
-        if (this.state.isInitState()) {
+        if (this.state.isAliveState()) {
             log.warn(String.format("the netty client [%s:%s] is already open...", host, port));
             return true;
         }
-
-        this.host = host;
-        this.port = port;
-
         // 初始化
         this.initBootstrap();
-        log.info(String.format("the netty client [%s:%s]  start  open...", host, port));
-        doConnect();
+        this.initPool();
+
+        log.info(String.format("the netty client [%s:%s]    open success...", host, port));
+        this.state = RemotingChannelState.ALIVE;
         return true;
 
 
     }
 
-
-    /**
-     * 连接
-     */
-    public void doConnect() {
-
-        if (this.channelFuture != null && this.channelFuture.channel().isActive()) {
-
-            return;
-        }
-
-        try {
-
-            channelFuture = bootstrap.connect(host, port).sync();
-            channelFuture.addListener(new ChannelFutureListener() {
-
-                public void operationComplete(ChannelFuture future) throws Exception {
-
-                    if (future.isSuccess()) {
-
-                        channelFuture = future;
-                        log.info(String.format("Connect to server [%s:%s] successfully!", host, port));
-                        state = RemotingChannelState.INIT;
-
-                    } else {
-                        log.info(String.format("Connect to server [%s:%s] fail!", host, port));
-                        future.channel().eventLoop().schedule(new Runnable() {
-                            public void run() {
-
-                                doConnect();
-                            }
-                        }, 3, TimeUnit.SECONDS);
-
-                        log.info(String.format("Failed to connect to server [%s:%s], try connect after 3s", host, port));
-                    }
-                }
-            });
-        } catch (Exception e) {
-            log.error(String.format("the netty server [%s:%s] is  open fail...", host, port), e);
-
-            try {
-                log.error(String.format("Failed to connect to server [%s:%s], try connect after 3s", host, port), e);
-                Thread.sleep(3000);
-                this.doConnect();
-            } catch (InterruptedException e1) {
-
-            }
-        }
-    }
 
     /**
      * 初始化
@@ -174,13 +136,13 @@ public class NettyClient extends AbstractRemotingClient {
                                 }
                                 if (command.getState() == RemotingCommandState.SUCCESS.getValue()) {
                                     responseFuture.onSuccess(command);
-                                } else if (command.getState() == RemotingCommandState.SUCCESS.getValue()) {
+                                } else if (command.getState() == RemotingCommandState.FAIL.getValue()) {
                                     responseFuture.onFail(command);
                                 }
 
                             }
                         }));
-                        ch.pipeline().addLast(new HeartbeatClientHandler(NettyClient.this));
+                        ch.pipeline().addLast(new HeartbeatClientHandler());
                     }
                 });
 
@@ -205,9 +167,9 @@ public class NettyClient extends AbstractRemotingClient {
 
         try {
 
-            this.channelFuture.channel().closeFuture().sync();
             this.workerGroup.shutdownGracefully();
-        } catch (InterruptedException e) {
+            this.state = RemotingChannelState.CLOSED;
+        } catch (Exception e) {
             log.error("the netty  close fail", e);
             throw new RuntimeException("the netty  close fail", e);
         }
@@ -220,31 +182,33 @@ public class NettyClient extends AbstractRemotingClient {
         return this.state.isClosedState();
     }
 
+    public boolean isAvailable() {
+        return this.state.isAliveState();
+    }
+
     public RemotingCommand request(RemotingCommand command) {
 
-        if (channelFuture == null || !this.channelFuture.channel().isActive()) {
 
-            throw new RuntimeException("request fail  request :" + command);
-        }
-        NettyResponseFuture responseFuture = new NettyResponseFuture(command, TIMEOUT);
-        this.registerCallback(responseFuture);
-        ChannelFuture writeFuture = this.channelFuture.channel().writeAndFlush(command);
-        boolean result = writeFuture.awaitUninterruptibly(TIMEOUT);
-        if (result && writeFuture.isSuccess()) {
+        NettyChannel nettyChannel = null;
+        RemotingCommand response = null;
+        try {
 
-            return responseFuture.getRemotingCommand();
-        }
+            nettyChannel = this.borrowChannel();
+            response = nettyChannel.request(command);
+            this.returnChannel(nettyChannel);
+        } catch (Exception e) {
+            log.error("nettyClient request fail", e);
+            this.invalidateChannel(nettyChannel);
+            throw new RuntimeException("nettyClient request fail", e);
 
-        // fail
-        writeFuture.cancel(false);
-        NettyResponseFuture response = this.removeNettyResponseFuture(command.getRequestId());
-
-        if (response != null) {
-            response.cancel();
         }
 
+        return response;
 
-        throw new RuntimeException("request fail  request :" + command);
+    }
 
+
+    protected PooledObjectFactory newNettyChannelPooledFactory() {
+        return new NettyPooledChannelFactory(this);
     }
 }

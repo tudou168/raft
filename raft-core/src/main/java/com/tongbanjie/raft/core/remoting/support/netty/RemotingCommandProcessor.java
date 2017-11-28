@@ -7,6 +7,7 @@ import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.protocol.*;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import io.netty.channel.ChannelHandlerContext;
+import sun.rmi.runtime.Log;
 
 /***
  *
@@ -31,22 +32,31 @@ public class RemotingCommandProcessor {
     public void electionVoteHandler(ChannelHandlerContext ctx, RemotingCommand msg) {
 
 
-        ElectionRequest electionRequest = JSON.parseObject(msg.getBody(), ElectionRequest.class);
-
-
-        ElectionResponse electionResponse = this.peer.electionVoteHandler(electionRequest);
-
         RemotingCommand remotingCommand = new RemotingCommand();
         remotingCommand.setRequestId(msg.getRequestId());
-        remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
-        remotingCommand.setBody(JSON.toJSONString(electionResponse));
         remotingCommand.setCommandType(RemotingCommandType.ELECTION.getValue());
+
+        try {
+            ElectionRequest electionRequest = JSON.parseObject(msg.getBody(), ElectionRequest.class);
+
+
+            ElectionResponse electionResponse = this.peer.electionVoteHandler(electionRequest);
+            remotingCommand.setBody(JSON.toJSONString(electionResponse));
+            remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
+            remotingCommand.setBody("无效的数据");
+        }
+
         ctx.writeAndFlush(remotingCommand);
 
     }
 
     /**
-     *  追加日志
+     * 追加日志
+     *
      * @param ctx
      * @param msg
      */

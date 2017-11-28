@@ -9,7 +9,8 @@ public enum RemotingChannelState {
 
     UNINIT(1),
     INIT(2),
-    CLOSED(3);
+    CLOSED(3),
+    ALIVE(4);
 
     private final int value;
 
@@ -36,4 +37,10 @@ public enum RemotingChannelState {
 
         return this == CLOSED;
     }
+
+    public boolean isAliveState() {
+        return this == ALIVE;
+    }
+
+
 }

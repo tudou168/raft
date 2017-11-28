@@ -10,11 +10,9 @@ public interface RemotingChannel {
     /**
      * 打开
      *
-     * @param host 地址
-     * @param port 端口
      * @return
      */
-    boolean open(String host, int port);
+    boolean open();
 
 
     /**
@@ -29,20 +27,15 @@ public interface RemotingChannel {
      */
     boolean isClosed();
 
+
+    boolean isAvailable();
+
     /**
      * 同步请求
      * @param command
      * @return
      */
     RemotingCommand request(RemotingCommand command);
-
-
-    void doConnect();
-
-
-
-
-
 
 
 

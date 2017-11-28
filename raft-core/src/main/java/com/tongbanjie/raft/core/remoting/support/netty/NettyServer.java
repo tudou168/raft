@@ -46,16 +46,40 @@ public class NettyServer extends AbstractRemotingServer {
 
     private RemotingCommandProcessor commandProcessor;
 
+    private String host;
+    private int port;
 
-    public NettyServer(RemotingCommandProcessor commandProcessor) {
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public RemotingCommandProcessor getCommandProcessor() {
+        return commandProcessor;
+    }
+
+    public void setCommandProcessor(RemotingCommandProcessor commandProcessor) {
         this.commandProcessor = commandProcessor;
     }
+
 
     public ChannelFuture getChannelFuture() {
         return channelFuture;
     }
 
-    public boolean open(String host, int port) {
+    public boolean open() {
 
 
         if (this.state.isInitState()) {
@@ -142,6 +166,10 @@ public class NettyServer extends AbstractRemotingServer {
         return this.state.isClosedState();
     }
 
+    public boolean isAvailable() {
+        return this.state.isAliveState();
+    }
+
     /**
      * @param command
      * @return
@@ -151,10 +179,5 @@ public class NettyServer extends AbstractRemotingServer {
         throw new RuntimeException(" not support request ...");
     }
 
-
-    public void doConnect() {
-
-        throw new UnsupportedOperationException("not support doConnect ");
-    }
 
 }

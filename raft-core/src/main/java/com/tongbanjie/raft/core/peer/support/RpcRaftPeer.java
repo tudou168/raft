@@ -13,6 +13,8 @@ import com.tongbanjie.raft.core.protocol.ElectionResponse;
 import com.tongbanjie.raft.core.remoting.RemotingClient;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.remoting.RemotingServer;
+import com.tongbanjie.raft.core.remoting.builder.RemotingClientBuilder;
+import com.tongbanjie.raft.core.remoting.builder.RemotingServerBuilder;
 import com.tongbanjie.raft.core.remoting.support.netty.NettyClient;
 import com.tongbanjie.raft.core.remoting.support.netty.NettyServer;
 import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
@@ -38,6 +40,9 @@ public class RpcRaftPeer implements RaftPeer {
 
     private RemotingClient remotingClient;
 
+
+    private RemotingCommandProcessor remotingCommandProcessor = new RemotingCommandProcessor(this);
+
     private String id;
 
     private String host;
@@ -50,19 +55,34 @@ public class RpcRaftPeer implements RaftPeer {
         String[] split = this.id.split(":");
         this.host = split[0];
         this.port = Integer.valueOf(split[1]);
-
-
+        this.remotingClient = new RemotingClientBuilder().host(host).port(port).requestTimeout(3000).builder();
     }
 
-    private void startNettyServer() {
 
-        this.remotingServer = new NettyServer(new RemotingCommandProcessor(this));
-        boolean open = this.remotingServer.open(host, port);
-        if (!open) {
+    public void setRemotingServer(RemotingServer remotingServer) {
+        this.remotingServer = remotingServer;
+    }
 
-            throw new RaftException("raft peer init fail...");
+
+    public void registerServer() {
+
+        if (this.remotingServer == null) {
+
+            this.remotingServer = new RemotingServerBuilder().host(host)
+                    .port(port).remotingCommandProcessor(this.remotingCommandProcessor).builder();
+
         }
     }
+
+    /**
+     * 取消注册服务
+     */
+    public void unregisterServer() {
+        if (this.remotingServer != null && !this.remotingServer.isClosed()) {
+            this.remotingServer.close();
+        }
+    }
+
 
     public RaftEngine getRaftEngine() {
         return raftEngine;
@@ -72,10 +92,6 @@ public class RpcRaftPeer implements RaftPeer {
         this.raftEngine = raftEngine;
     }
 
-    public void registerServer() {
-
-        this.startNettyServer();
-    }
 
     public String getId() {
         return id;
@@ -89,7 +105,7 @@ public class RpcRaftPeer implements RaftPeer {
             String[] split = this.id.split(":");
             String host = split[0];
             int port = Integer.valueOf(split[1]);
-            boolean open = remotingClient.open(host, port);
+            boolean open = remotingClient.open();
             if (!open) {
                 throw new RaftException("the netty client open fail");
             }
