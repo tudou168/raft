@@ -36,6 +36,7 @@ public class RaftPeerBuilder {
     //  日志存储文件名称
     private String dataStoreFile;
 
+    //  日志编码及解码器
     private RaftLogCodec logCodec;
 
 
@@ -88,6 +89,8 @@ public class RaftPeerBuilder {
     }
 
     /**
+     * 构造非本地 peer 列表
+     *
      * @return
      */
     private List<RaftPeer> buildPeers() {
