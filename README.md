@@ -5,7 +5,7 @@
 ***
 1. 官网[raft](https://raft.github.io/)
 
-2.日志编码格式
+2.  日志编码格式
 
 ```java
 
