@@ -29,6 +29,9 @@ public interface RaftPeer {
     void setRemotingServer(RemotingServer remotingServer);
 
 
+    boolean bootstrap();
+
+
     /**
      * 注册服务
      */
@@ -38,6 +41,11 @@ public interface RaftPeer {
      * 取消注册服务
      */
     void unregisterServer();
+
+
+    void registerRemotingClient();
+
+    void unregisterRemotingClient();
 
     //  发起选举投票请求
     ElectionResponse electionVote(ElectionRequest request);

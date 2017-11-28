@@ -38,7 +38,7 @@ public class RaftConstant {
     public final static int electionTimeoutMs = 5000;
 
     //  心跳时间间隔
-    public final static int heartbeatIntervalTimeMs = 1000;
+    public final static int heartbeatIntervalTimeMs = 500;
 
     // 追加日志最大等待时间
     public final static int waitForMaxTimeMs = 300;

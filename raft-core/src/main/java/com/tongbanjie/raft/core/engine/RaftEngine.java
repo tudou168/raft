@@ -900,6 +900,7 @@ public class RaftEngine {
                         }
 
                         nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
+                        return;
                     }
 
 

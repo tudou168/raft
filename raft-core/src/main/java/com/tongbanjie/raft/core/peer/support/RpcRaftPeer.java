@@ -55,12 +55,20 @@ public class RpcRaftPeer implements RaftPeer {
         String[] split = this.id.split(":");
         this.host = split[0];
         this.port = Integer.valueOf(split[1]);
-        this.remotingClient = new RemotingClientBuilder().host(host).port(port).requestTimeout(3000).builder();
+
     }
 
 
     public void setRemotingServer(RemotingServer remotingServer) {
         this.remotingServer = remotingServer;
+    }
+
+    /**
+     * @return
+     */
+    public boolean bootstrap() {
+        this.raftEngine.bootstrap();
+        return true;
     }
 
 
@@ -81,6 +89,19 @@ public class RpcRaftPeer implements RaftPeer {
         if (this.remotingServer != null && !this.remotingServer.isClosed()) {
             this.remotingServer.close();
         }
+    }
+
+    public void registerRemotingClient() {
+        if (this.remotingClient == null) {
+            this.remotingClient = new RemotingClientBuilder().host(host).port(port).requestTimeout(3000).builder();
+        }
+        if (!this.remotingClient.isAvailable()) {
+            this.remotingClient.open();
+        }
+    }
+
+    public void unregisterRemotingClient() {
+
     }
 
 
