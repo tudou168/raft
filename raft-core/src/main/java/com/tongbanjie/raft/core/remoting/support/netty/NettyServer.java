@@ -91,15 +91,16 @@ public class NettyServer extends AbstractRemotingServer {
         try {
 
             this.channelFuture = this.serverBootstrap.bind(host, port).sync();
-            this.state = RemotingChannelState.INIT;
+            this.state = RemotingChannelState.ALIVE;
             log.info(String.format("the netty server [%s:%s]  open success...", host, port));
             return true;
 
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             log.error(String.format("the netty server [%s:%s] is  open fail...", host, port), e);
+            throw new RuntimeException(String.format("the netty server [%s:%s] is  open fail...", host, port));
         }
 
-        return false;
+
     }
 
 
