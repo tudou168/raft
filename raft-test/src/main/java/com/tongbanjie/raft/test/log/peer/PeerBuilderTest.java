@@ -14,7 +14,7 @@ public class PeerBuilderTest {
 
     public static void main(String[] args) {
 
-        String localServer = "127.0.0.1:6001";
+        String localServer = "127.0.0.1:6003";
         String servers = "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003";
         RaftPeerBuilder raftPeerBuilder = new RaftPeerBuilder();
         RaftPeer raftPeer = raftPeerBuilder

@@ -84,7 +84,6 @@ public class RaftPeerBuilder {
         DefaultRaftLogService logService = new DefaultRaftLogService(dataStorage, this.logCodec);
         List<RaftPeer> raftPeers = this.buildPeers();
         RpcRaftPeer localPeer = new RpcRaftPeer(this.localServer);
-        raftPeers.add(localPeer);
         RaftEngine localEngine = new RaftEngine(localServer, logService);
         localPeer.setRaftEngine(localEngine);
         localEngine.setConfiguration(raftPeers, null);
@@ -102,10 +101,6 @@ public class RaftPeerBuilder {
         String[] serverStrList = this.servers.split(",");
         List<RaftPeer> raftPeers = new ArrayList<RaftPeer>();
         for (String server : serverStrList) {
-
-            if (StringUtils.equals(server, localServer)) {
-                continue;
-            }
 
             RaftPeer raftPeer = new RpcRaftPeer(server);
             // register the remoting client

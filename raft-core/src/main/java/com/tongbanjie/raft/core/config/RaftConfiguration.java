@@ -220,6 +220,18 @@ public class RaftConfiguration {
                 throw new RaftException("raft configuration new peers is empty !");
             }
 
+            //  destroy all  old Peers client
+            for (RaftPeer peer : oldPeers.explode()) {
+
+                try {
+
+                    peer.unregisterRemotingClient();
+
+                } catch (Exception e) {
+                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
+
+                }
+            }
 
             this.oldPeers = this.newPeers;
             this.state = RaftConfigurationState.COLD.getName();
@@ -245,11 +257,59 @@ public class RaftConfiguration {
                 return;
             }
 
+
+            //  destroy all  new peers client
+            for (RaftPeer peer : newPeers.explode()) {
+
+                try {
+
+                    peer.unregisterRemotingClient();
+
+                } catch (Exception e) {
+                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
+
+                }
+            }
+
             this.newPeers = new RaftPeerCluster();
             this.state = RaftConfigurationState.COLD.getName();
+
         } finally {
             this.lock.writeLock().unlock();
         }
     }
 
+
+    /**
+     * check contains peer
+     *
+     * @param peerId peer id
+     * @return
+     */
+    public boolean containsPeer(String peerId) {
+
+        this.lock.readLock().lock();
+
+        try {
+            return this.getAllPeers().getPeers().containsKey(peerId);
+        } finally {
+
+            this.lock.readLock().unlock();
+        }
+
+
+    }
+
+
+    public RaftPeerCluster getOldPeers() {
+        return oldPeers;
+    }
+
+    public RaftPeerCluster getNewPeers() {
+        return newPeers;
+    }
+
+    public String getState() {
+        return state;
+    }
 }

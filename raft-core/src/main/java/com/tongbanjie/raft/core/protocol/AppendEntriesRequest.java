@@ -13,11 +13,22 @@ import java.util.List;
  */
 public class AppendEntriesRequest implements Serializable {
 
+    //  任期
     private long term;
+
+    //  当前leader
     private String leaderId;
+
+    //  日志索引号
     private long preLogIndex;
+
+    //  日志保存的任期
     private long preLogTerm;
+
+    //  日志列表
     private List<RaftLog> entries;
+
+    //  最后提交日志索引号
     private long commitIndex;
 
 

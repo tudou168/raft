@@ -119,7 +119,6 @@ public class DefaultRaftLogService implements RaftLogService {
                 }
 
                 this.raftLogs.add(raftLog);
-
             }
 
 

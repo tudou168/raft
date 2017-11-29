@@ -52,7 +52,6 @@ public interface RaftPeer {
 
     /**
      * 追加日志
-     *
      * @param request 追加日志请求体
      * @return
      */
@@ -60,13 +59,13 @@ public interface RaftPeer {
 
     /**
      * 选举处理
-     *
      * @param electionRequest
      * @return
      */
     ElectionResponse electionVoteHandler(ElectionRequest electionRequest);
 
     /**
+     * 追加日志
      * @param appendEntriesRequest
      * @return
      */

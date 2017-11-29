@@ -41,6 +41,13 @@ public class RaftConstant {
     public final static int heartbeatIntervalTimeMs = 300;
 
 
+    //  join the raft cluster such as "raft:join 192.168.1.1"
+    public final static String join = "raft:join";
+
+    //  leave the raft cluster such as "raft:leave"
+    public final static String leave = "raft:leave";
+
+
     public final static String logo = "\n" +
             "/***\n" +
             " *      _____        __ _      __               _                  \n" +

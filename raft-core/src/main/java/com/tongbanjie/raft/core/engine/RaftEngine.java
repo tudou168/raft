@@ -1,11 +1,14 @@
 package com.tongbanjie.raft.core.engine;
 
 import com.alibaba.fastjson.JSON;
+import com.tongbanjie.raft.core.bootstrap.RaftPeerBuilder;
+import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.election.RaftElectionService;
 import com.tongbanjie.raft.core.election.handler.ElectionResponseHandler;
 import com.tongbanjie.raft.core.election.support.DefaultRaftElectionService;
+import com.tongbanjie.raft.core.enums.RaftCommandType;
 import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.listener.ConfigurationChangeListener;
@@ -13,6 +16,7 @@ import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
+import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.core.protocol.*;
 import com.tongbanjie.raft.core.replication.ReplicationService;
 import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandler;
@@ -202,6 +206,106 @@ public class RaftEngine {
 
     }
 
+    /**
+     * raft 命令处理
+     *
+     * @param command
+     * @param changeListener
+     */
+    public void commandHandler(RaftCommand command, LogApplyListener changeListener) {
+
+        this.lock.writeLock().lock();
+
+        try {
+
+
+            Integer commandType = command.getType();
+            if (RaftCommandType.LEAVE.getValue() == commandType) {
+
+
+                this.leaveCommandHandler(command, changeListener);
+
+
+            } else if (RaftCommandType.JOIN.getValue() == commandType) {
+
+                this.joinCommandHandler(command, changeListener);
+            }
+
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+
+    }
+
+    /**
+     * 加入集群命令处理
+     *
+     * @param command       命令
+     * @param applyListener 配置改变监听
+     */
+    private void joinCommandHandler(RaftCommand command, LogApplyListener applyListener) {
+
+        String connectStr = command.getConnectStr();
+        boolean exists = this.config.containsPeer(connectStr);
+
+        // check repeat join
+        if (exists) {
+
+            return;
+        }
+
+        //
+        RaftPeer raftPeer = new RpcRaftPeer(connectStr);
+        // register the remoting client
+        raftPeer.registerRemotingClient();
+
+        long lastIndex = this.logService.getLastIndex();
+        lastIndex = lastIndex + 1;
+
+        String content = RaftConstant.join + " " + connectStr;
+
+        byte[] body = content.getBytes();
+        RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, applyListener);
+        // 追加到本地
+        this.logService.appendRaftLog(raftLog);
+
+        RaftPeerCluster cluster = new RaftPeerCluster();
+        Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
+        for (RaftPeer peer : this.config.getOldPeers().explode()) {
+
+            RaftPeer p = new RpcRaftPeer(peer.getId());
+            // register the remoting client
+            p.registerRemotingClient();
+            raftPeerMap.put(p.getId(), p);
+        }
+        raftPeerMap.put(raftPeer.getId(), raftPeer);
+        cluster.setPeers(raftPeerMap);
+        this.config.changeTo(cluster);
+
+
+    }
+
+
+    /**
+     * 脱离集群处理
+     *
+     * @param command       命令
+     * @param applyListener 配置改变监听
+     */
+    private void leaveCommandHandler(RaftCommand command, LogApplyListener applyListener) {
+        String connectStr = command.getConnectStr();
+
+        //  check if exists
+        boolean exists = this.config.containsPeer(connectStr);
+        if (!exists) {
+            log.warn(String.format("the raft %s not in the raft cluster!", connectStr));
+            return;
+        }
+
+
+    }
+
 
     /***
      * 启动
@@ -271,6 +375,7 @@ public class RaftEngine {
         }
 
     }
+
 
     /**
      * 开始选举投票
