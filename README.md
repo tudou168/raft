@@ -65,7 +65,7 @@
      */
 
 ```
-##  remoting command 编码格式
+##  Remoting Command 编码格式
 
 ```java
 
@@ -83,7 +83,7 @@
 
 ```
 
-##  peer 生命周期
+##  Peer 生命周期
 
 ```java
 
@@ -109,7 +109,7 @@
 ```
 ##   快速开始
 
-1.  选定要启动的peer节点数并配置好指定的peer地址及端口号启动即可。
+>   选定要启动的 **Peer** 节点数并配置好指定的peer地址及端口号启动即可。
 
 ```java
 package com.tongbanjie.raft.test.log.peer;
