@@ -65,6 +65,8 @@ public class RemotingCommandProcessor {
 
         String body = msg.getBody();
         AppendEntriesRequest appendEntriesRequest = JSON.parseObject(body, AppendEntriesRequest.class);
+
+
         AppendEntriesResponse appendEntriesResponse = this.peer.appendEntriesHandler(appendEntriesRequest);
 
         RemotingCommand remotingCommand = new RemotingCommand();

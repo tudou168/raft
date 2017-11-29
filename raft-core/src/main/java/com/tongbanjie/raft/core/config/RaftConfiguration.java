@@ -184,12 +184,14 @@ public class RaftConfiguration {
 
             if (!StringUtils.equals(RaftConfigurationState.COLD.getName(), this.state)) {
 
-                throw new RaftException(String.format("the raft configuration state is not %s", RaftConfigurationState.CNEW.getName()));
+                log.warn(String.format("the raft configuration state is not %s", RaftConfigurationState.CNEW.getName()));
+                return;
             }
 
             if (this.newPeers.size() > 0) {
 
-                throw new RaftException(String.format("the raft configuration new configuration is not empty %s", this.newPeers.getPeers()));
+                log.warn(String.format("the raft configuration new configuration is not empty %s", this.newPeers.getPeers()));
+                return;
             }
 
             this.newPeers = peerCluster;
