@@ -105,6 +105,9 @@ public class RpcRaftPeer implements RaftPeer {
 
     public void unregisterRemotingClient() {
 
+        if (this.remotingClient != null && this.remotingClient.isClosed()) {
+            this.remotingClient.close();
+        }
     }
 
 

@@ -151,7 +151,7 @@ public class NettyServer extends AbstractRemotingServer {
                 this.workerGroup.shutdownGracefully();
                 this.state = RemotingChannelState.CLOSED;
 
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 log.error("the netty server close fail", e);
             }
         }
