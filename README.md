@@ -1,29 +1,30 @@
-### Raft 项目
+# Raft 项目
 
 [raft 参数地址](https://raft.github.io/)
 
-####    1.概述
+##    概述
 
-    分布式一致性 raft 算法实现
+>分布式一致性 **raft** 算法实现
     
     
-1. 角色
+##   角色
 
-    +   Leader(领导)
-        -   Leader(领导)在raft集群中同一个任期有且只有一个leader节点。
-        -   Leader节点主要维持整个raft集群中各个节点的状态、接收client的请求、将状态、配置、以及数据以日志的形式同步到其他节点。
+    1.  Leader(领导)
+        -   Leader(领导)在 **raft** 集群中同一个任期有且只有一个leader节点。
+        -   Leader 节点主要维持整个 **raft** 集群中各个节点的状态、接收client的请求、状态、配置、以及数据以日志的形式同步到其他节点。
         -   Leader 定时发送心跳(心跳会当做日志) 到各个集群中的节点来阻止其他节点选举定时器超时。
-    +  Candidate(候选人)
-        -   Candidate(候选人)当raft集群中的选举定时器超时，当前节点会变成Candidate状态。
-        -   只有拥有 Candidate 角色的才有能力发起投票选举请求。
+    2.  Candidate(候选人)
+        -   Candidate(候选人)当 **raft** 集群中的选举定时器超时，当前节点会变成Candidate状态。
+        -   只有拥有 **Candidate** 角色的才有能力发起投票选举请求。
         -   一个 raft 集群中有可能存在多个 Candidate 角色的节点。
         -   自己在发起投票请求前如果没有投票给其他节点则首先投一票给自己。
-    +   Follower(跟随者)
-        -   当raft节点启动时初始化为Follower(跟随者)身份。
-        -   Follower角色的节点只有接收处理Leader发送的日志或者选举投票请求。将日志追加到本地日志列表中。
-        -   Follower角色的节点内部会维持一个随机投票选举超时定时器，当选举超时定时器超时后当前节点会变更为Candidate角色。
+    3.  Follower(跟随者)
+        -   当 **raft** 节点启动时初始化为 Follower(跟随者)身份。
+        -   Follower角色的节点只有接收处理 **Leader** 发送的日志或者选举投票请求。将日志追加到本地日志列表中。
+        -   Follower角色的节点内部会维持一个随机投票选举超时定时器，当选举超时定时器超时后当前节点会变更为 **Candidate** 角色。
 
-2.  日志编码格式
+
+##   日志编码格式
 
 ```java
 
@@ -39,7 +40,7 @@
      */
 
 ```
-3.  remoting command 编码格式
+##  remoting command 编码格式
 
 ```java
 
@@ -57,7 +58,7 @@
 
 ```
 
-4. peer 生命周期
+##  peer 生命周期
 
 ```java
 
@@ -81,9 +82,9 @@
 //
 
 ```
-####    2.快速开始
+##   快速开始
 
-1.  选定要启动的 peer 节点数并配置好指定的 peer 地址及端口号启动即可。
+1.  选定要启动的peer节点数并配置好指定的peer地址及端口号启动即可。
 
 ```java
 package com.tongbanjie.raft.test.log.peer;
@@ -145,7 +146,7 @@ public class PeerBuilderTest {
 
 ***
 
-####    3.todolist
+##   todolist
 
 1.  ~~日志模块~~
 2.  ~~配置管理模块~~
