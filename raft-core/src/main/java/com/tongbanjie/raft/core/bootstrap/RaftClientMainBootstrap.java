@@ -9,7 +9,7 @@ import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.remoting.builder.RemotingClientBuilder;
 import com.tongbanjie.raft.core.util.NetUtil;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.net.InetAddress;
 import java.util.Arrays;

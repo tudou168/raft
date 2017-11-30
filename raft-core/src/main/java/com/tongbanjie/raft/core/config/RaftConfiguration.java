@@ -4,7 +4,7 @@ import com.tongbanjie.raft.core.enums.RaftConfigurationState;
 import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

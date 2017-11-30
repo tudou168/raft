@@ -1,7 +1,7 @@
 package com.tongbanjie.raft.core.peer.support;
 
 import com.tongbanjie.raft.core.peer.RaftPeer;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;

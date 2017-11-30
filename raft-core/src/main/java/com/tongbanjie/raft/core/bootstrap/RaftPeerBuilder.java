@@ -9,9 +9,7 @@ import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.core.util.NetUtil;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringUtils;
 
 import java.net.InetAddress;
 import java.util.ArrayList;

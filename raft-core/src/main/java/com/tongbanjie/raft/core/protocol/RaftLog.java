@@ -2,8 +2,8 @@ package com.tongbanjie.raft.core.protocol;
 
 import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 /***
  * raft log 实体
@@ -89,6 +89,6 @@ public class RaftLog {
 
     @Override
     public String toString() {
-        return ToStringBuilder.reflectionToString(this, ToStringStyle.JSON_STYLE);
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SIMPLE_STYLE);
     }
 }

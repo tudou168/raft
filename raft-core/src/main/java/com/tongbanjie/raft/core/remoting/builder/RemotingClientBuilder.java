@@ -3,7 +3,7 @@ package com.tongbanjie.raft.core.remoting.builder;
 import com.tongbanjie.raft.core.remoting.RemotingChannel;
 import com.tongbanjie.raft.core.remoting.RemotingClient;
 import com.tongbanjie.raft.core.remoting.support.netty.NettyClient;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 /***
  *

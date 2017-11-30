@@ -1,7 +1,7 @@
 package com.tongbanjie.raft.core.remoting;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 import java.io.Serializable;
 
@@ -60,6 +60,6 @@ public class RemotingCommand implements Serializable {
 
     @Override
     public String toString() {
-        return ToStringBuilder.reflectionToString(this, ToStringStyle.JSON_STYLE);
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.SIMPLE_STYLE);
     }
 }
