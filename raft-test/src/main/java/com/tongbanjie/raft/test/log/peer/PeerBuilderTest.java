@@ -20,10 +20,9 @@ public class PeerBuilderTest {
         RaftPeer raftPeer = raftPeerBuilder
                 .localServer(localServer)
                 .servers(servers)
-                .dataStoreFile("./" + localServer)
+                .dataStorePath("./" + localServer)
                 .dataStoreFile("." + localServer + "_raft")
                 .logCodec(new Crc32RaftLogCodec()).builder();
         raftPeer.bootstrap();
-        while (true) ;
     }
 }
