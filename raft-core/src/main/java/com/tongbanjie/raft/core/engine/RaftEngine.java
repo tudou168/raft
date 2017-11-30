@@ -393,6 +393,15 @@ public class RaftEngine {
     }
 
 
+    private boolean isOnlySelf() {
+
+        List<RaftPeer> peers = this.config.getAllPeers().expect(getId()).explode();
+        if (peers == null || peers.isEmpty()) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * 开始选举
      */
@@ -401,8 +410,8 @@ public class RaftEngine {
         this.lock.writeLock().lock();
 
         try {
-            List<RaftPeer> peers = this.config.getAllPeers().expect(getId()).explode();
-            if (peers == null || peers.isEmpty()) {
+
+            if (this.isOnlySelf()) {
                 return;
             }
 
@@ -447,7 +456,9 @@ public class RaftEngine {
         this.lock.readLock().lock();
         ElectionRequest electionRequest = null;
         try {
-
+            if (this.isOnlySelf()) {
+                return;
+            }
 
             electionRequest = new ElectionRequest();
             long lastTerm = this.logService.getLastTerm();
@@ -473,6 +484,9 @@ public class RaftEngine {
      */
     private void startHeartbeat() {
 
+        if (this.isOnlySelf()) {
+            return;
+        }
         log.debug(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
         this.appendLogEntry("heartbeat".getBytes(), null);
     }
