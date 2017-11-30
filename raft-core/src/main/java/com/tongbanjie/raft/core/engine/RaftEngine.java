@@ -1135,7 +1135,7 @@ public class RaftEngine {
 
 
                 }
-                log.warn(String.format("%s replication log  to %s with pre log index %s not match,the next schedule again...", getId(), peer.getId(), preLogIndex));
+
                 // continue
 
             } finally {
