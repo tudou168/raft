@@ -120,8 +120,8 @@ public class RaftEngine {
     public RaftEngine(String id, RaftLogService logService) {
         this.id = id;
         this.logService = logService;
-        this.electionService = new DefaultRaftElectionService(this);
-        this.replicationService = new DefaultReplicationService(this);
+        this.electionService = new DefaultRaftElectionService();
+        this.replicationService = new DefaultReplicationService();
         this.config = new RaftConfiguration();
         this.logService.setConfiguration(this.config);
     }
@@ -1049,7 +1049,7 @@ public class RaftEngine {
                         term = electionResponse.getTerm();
                         leader = RaftConstant.noLeader;
                         voteFor = RaftConstant.noVoteFor;
-                        log.info(String.format("raft:%s become %s in the %s term...<<<<<<<<<<", getId(), state, term));
+                        log.warn(String.format("raft:%s become %s in the %s term...<<<<<<<<<<", getId(), state, term));
                         return;
                     }
                     //  投票通过
@@ -1086,7 +1086,7 @@ public class RaftEngine {
             state = RaftConstant.leader;
             voteFor = noVoteFor;
             leader = id;
-            log.debug(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
+            log.info(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
             log.info(String.format(">>>>>>>>>>>%s start send heartbeat schedule timer.....<<<<<<<<<<", getId()));
@@ -1115,7 +1115,7 @@ public class RaftEngine {
         public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex, Long staticsId) {
 
 
-            log.info(String.format("%s replication response handler %s,response %s", getId(), peer.getId(), tuple));
+            log.debug(String.format("%s replication response handler %s,response %s", getId(), peer.getId(), tuple));
 
             lock.writeLock().lock();
 
@@ -1158,7 +1158,7 @@ public class RaftEngine {
                         }
                         if (config.pass(staticsList)) {
                             long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
-                            log.info(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
+                            log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
                             // 提交本地日志
                             logService.commitToIndex(commitIndex);
                         }

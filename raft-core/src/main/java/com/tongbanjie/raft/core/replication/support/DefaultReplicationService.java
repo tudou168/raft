@@ -24,19 +24,13 @@ public class DefaultReplicationService implements ReplicationService {
 
     private final static Logger log = LoggerFactory.getLogger(DefaultReplicationService.class);
 
-    private RaftEngine raftEngine;
-
-    public DefaultReplicationService(RaftEngine raftEngine) {
-        this.raftEngine = raftEngine;
-    }
-
 
     public void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler, Long staticsId) {
 
 
         ReplicationLogResponseTuple tuple = new ReplicationLogResponseTuple();
         try {
-            log.info(String.format("%s send  append entries request %s", peer.getId(), request));
+
             AppendEntriesResponse response = peer.appendEntries(request);
             tuple.setAppendEntriesResponse(response);
             tuple.setSuccess(true);

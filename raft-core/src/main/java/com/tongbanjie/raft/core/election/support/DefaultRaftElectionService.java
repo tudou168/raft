@@ -20,11 +20,6 @@ public class DefaultRaftElectionService implements RaftElectionService {
 
     private final static Logger log = LoggerFactory.getLogger(DefaultRaftElectionService.class);
 
-    private RaftEngine engine;
-
-    public DefaultRaftElectionService(RaftEngine engine) {
-        this.engine = engine;
-    }
 
     public void electionVoteRequest(RaftPeer raftPeer, ElectionRequest request, ElectionResponseHandler handler) {
 
