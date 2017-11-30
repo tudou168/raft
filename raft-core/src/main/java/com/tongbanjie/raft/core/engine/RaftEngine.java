@@ -90,9 +90,6 @@ public class RaftEngine {
     //  选举超时调度器
     private ScheduledFuture electionTimeoutScheduledFuture;
 
-    //  心跳调度器
-    private ScheduledFuture heartbeatScheduledFuture;
-
     //  日志并发刷新调度器
     private ScheduledFuture replicationScheduledFuture;
 
@@ -477,20 +474,6 @@ public class RaftEngine {
         //  请求选举
         this.electionService.electionVoteRequest(peer, electionRequest, new SimpleElectionVoteResponseHandler(electionRequest));
     }
-
-
-    /***
-     * 开始发送心跳
-     */
-    private void startHeartbeat() {
-
-        if (this.isOnlySelf()) {
-            return;
-        }
-        log.debug(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
-        this.appendLogEntry("heartbeat".getBytes(), null);
-    }
-
 
     /***
      * 追加日志
@@ -925,38 +908,6 @@ public class RaftEngine {
     }
 
     /**
-     * 重置心跳定时器
-     */
-    private void resetHeartbeatTimer() {
-
-        if (this.heartbeatScheduledFuture != null && !this.heartbeatScheduledFuture.isDone()) {
-            this.heartbeatScheduledFuture.cancel(true);
-        }
-
-        this.heartbeatScheduledFuture = this.scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
-            public void run() {
-
-                startHeartbeat();
-
-            }
-        }, RaftConstant.heartbeatIntervalTimeMs, RaftConstant.heartbeatIntervalTimeMs, TimeUnit.MILLISECONDS);
-
-    }
-
-
-    /**
-     * 停止心跳定时器
-     */
-    private void stopHeartbeatTimer() {
-
-        if (this.heartbeatScheduledFuture != null && !this.heartbeatScheduledFuture.isDone()) {
-            this.heartbeatScheduledFuture.cancel(true);
-        }
-
-    }
-
-
-    /**
      * 重置并发复制日志定时器
      */
     private void resetReplicationScheduledTimer() {
@@ -1108,9 +1059,6 @@ public class RaftEngine {
             log.info(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
-            log.info(String.format(">>>>>>>>>>>%s start send heartbeat schedule timer.....<<<<<<<<<<", getId()));
-            resetHeartbeatTimer();
-
             log.info(String.format(">>>>>>>>>>>%s start concurrent replication log schedule timer .....<<<<<<<<<<", getId()));
             resetReplicationScheduledTimer();
 
@@ -1210,8 +1158,6 @@ public class RaftEngine {
         log.info(String.format("%s become follower in  the %s term", getId(), term));
         this.voteFor = noVoteFor;
         this.state = follower;
-        log.info(String.format("%s  stop heartbeat timer in the  %s term", getId(), term));
-        this.stopHeartbeatTimer();
         log.info(String.format("%s  stop replication timer in the %s term", getId(), term));
         this.stopReplicationScheduledTimer();
         log.info(String.format("%s  reset election timeout timer in the %s term", getId(), term));
