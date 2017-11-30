@@ -57,7 +57,7 @@ public class RaftClientMainBootstrap {
             raftCommand.setConnectStr(hostAddress + ":6001");
 
             RemotingClientBuilder clientBuilder = new RemotingClientBuilder();
-            client = clientBuilder.requestTimeout(500000).host(host).port(5001).builder();
+            client = clientBuilder.requestTimeout(6000 * 10).host(host).port(5001).builder();
 
             RemotingCommand remotingCommand = new RemotingCommand();
             remotingCommand.setRequestId(RequestIdGenerator.getRequestId());
