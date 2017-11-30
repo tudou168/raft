@@ -115,7 +115,7 @@ public class RemotingCommandProcessor {
         remotingCommand.setCommandType(RemotingCommandType.COMMAND.getValue());
         try {
             Boolean sec = queue.poll(3000, TimeUnit.MILLISECONDS);
-            if (sec) {
+            if (sec != null && sec) {
                 remotingCommand.setBody("SUC");
             } else {
                 remotingCommand.setBody("FAIL");

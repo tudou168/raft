@@ -259,6 +259,7 @@ public class RaftEngine {
         // check repeat join
         if (exists) {
 
+            applyListener.notify(this.logService.getLastCommittedIndex(), null);
             return;
         }
 

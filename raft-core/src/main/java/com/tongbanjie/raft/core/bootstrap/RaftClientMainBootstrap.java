@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.enums.RaftCommandType;
+import com.tongbanjie.raft.core.enums.RemotingCommandState;
+import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.remoting.RemotingClient;
 import com.tongbanjie.raft.core.remoting.RemotingCommand;
 import com.tongbanjie.raft.core.remoting.builder.RemotingClientBuilder;
@@ -25,6 +27,7 @@ public class RaftClientMainBootstrap {
 
     public static void main(String[] args) {
 
+        //  args = new String[]{"raft:leave","192.168.124.51"};
         List<String> arguments = Arrays.asList(args);
         if (arguments == null || arguments.size() < 2) {
             System.out.println("argument has no enough");
@@ -54,12 +57,13 @@ public class RaftClientMainBootstrap {
             raftCommand.setConnectStr(hostAddress + ":6001");
 
             RemotingClientBuilder clientBuilder = new RemotingClientBuilder();
-            client = clientBuilder.requestTimeout(5000).host(host).port(5001).builder();
+            client = clientBuilder.requestTimeout(500000).host(host).port(5001).builder();
 
             RemotingCommand remotingCommand = new RemotingCommand();
             remotingCommand.setRequestId(RequestIdGenerator.getRequestId());
             remotingCommand.setBody(JSON.toJSONString(raftCommand));
-
+            remotingCommand.setCommandType(RemotingCommandType.COMMAND.getValue());
+            remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
             RemotingCommand response = client.request(remotingCommand);
 
             System.out.println(response.getBody());

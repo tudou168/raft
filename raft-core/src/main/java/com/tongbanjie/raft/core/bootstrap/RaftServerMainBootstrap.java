@@ -12,7 +12,7 @@ public class RaftServerMainBootstrap {
 
 
     public static void main(String[] args) {
-
+        //  args = new String[]{"192.168.124.51:6001","192.168.124.51:6001,192.168.1.121:6001","./log",".raft"};
         if (args == null || args.length < 4) {
             System.err.println("args has no enough!");
             System.exit(1);
