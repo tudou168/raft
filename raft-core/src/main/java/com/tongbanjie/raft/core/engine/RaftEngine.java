@@ -400,6 +400,10 @@ public class RaftEngine {
         this.lock.writeLock().lock();
 
         try {
+            List<RaftPeer> peers = this.config.getAllPeers().expect(getId()).explode();
+            if (peers == null || peers.isEmpty()) {
+                return;
+            }
 
             log.info(String.format("%s become candidate...", getId()));
             this.votes.clear();
