@@ -1,7 +1,9 @@
 package com.tongbanjie.raft.core.peer;
 
 
+import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.engine.RaftEngine;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
 import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
 import com.tongbanjie.raft.core.protocol.ElectionRequest;
@@ -47,6 +49,9 @@ public interface RaftPeer {
 
     void unregisterRemotingClient();
 
+
+    void registerRaftClientServer(String host, int port);
+
     //  发起选举投票请求
     ElectionResponse electionVote(ElectionRequest request);
 
@@ -70,6 +75,15 @@ public interface RaftPeer {
      * @return
      */
     AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest appendEntriesRequest);
+
+
+    /**
+     * 执行命令
+     *
+     * @param command
+     * @param applyListener
+     */
+    void commandHandler(RaftCommand command, LogApplyListener applyListener);
 
 
 }

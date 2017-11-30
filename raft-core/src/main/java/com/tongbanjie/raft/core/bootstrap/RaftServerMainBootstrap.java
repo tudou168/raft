@@ -31,6 +31,7 @@ public class RaftServerMainBootstrap {
         RaftPeer raftPeer = raftPeerBuilder
                 .localServer(localServer)
                 .servers(servers)
+                .clientPort(5001)
                 .dataStorePath(dataStorePath)
                 .dataStoreFile(dataStoreFile)
                 .logCodec(new Crc32RaftLogCodec()).builder();

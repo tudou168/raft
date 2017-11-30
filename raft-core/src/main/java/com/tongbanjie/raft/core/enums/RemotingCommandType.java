@@ -13,7 +13,8 @@ public enum RemotingCommandType {
     //  选举
     ELECTION(1),
     // 追加日志
-    APPEND(2);
+    APPEND(2),
+    COMMAND(3);
 
     private final int value;
 

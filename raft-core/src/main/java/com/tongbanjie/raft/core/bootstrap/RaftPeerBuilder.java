@@ -8,10 +8,12 @@ import com.tongbanjie.raft.core.log.manage.support.DefaultRaftLogService;
 import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
+import com.tongbanjie.raft.core.util.NetUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +33,8 @@ public class RaftPeerBuilder {
     //  本地服务地址
     private String localServer;
 
+    private Integer clientPort;
+
     //  集群配置列表
     private String servers;
 
@@ -47,6 +51,12 @@ public class RaftPeerBuilder {
     public RaftPeerBuilder localServer(String localServer) {
 
         this.localServer = localServer;
+        return this;
+    }
+
+    public RaftPeerBuilder clientPort(int clientPort) {
+
+        this.clientPort = clientPort;
         return this;
     }
 
@@ -82,13 +92,32 @@ public class RaftPeerBuilder {
         DefaultDataStorage dataStorage = new DefaultDataStorage(this.dataStorePath, this.dataStoreFile);
 
         DefaultRaftLogService logService = new DefaultRaftLogService(dataStorage, this.logCodec);
-        List<RaftPeer> raftPeers = this.buildPeers();
+
         RpcRaftPeer localPeer = new RpcRaftPeer(this.localServer);
+
+        // register local server  accept the client connect
+        this.registerLocalServer(localPeer);
+        localPeer.registerServer();
+        List<RaftPeer> raftPeers = this.buildPeers();
         RaftEngine localEngine = new RaftEngine(localServer, logService);
         localPeer.setRaftEngine(localEngine);
         localEngine.setConfiguration(raftPeers, null);
-        localPeer.registerServer();
+
         return localPeer;
+    }
+
+    /**
+     * 注册本地服务
+     *
+     * @param localPeer
+     */
+    private void registerLocalServer(RpcRaftPeer localPeer) {
+
+        InetAddress localAddress = NetUtil.getLocalAddress();
+        String host = localAddress.getHostAddress();
+
+        localPeer.registerRaftClientServer(host, clientPort);
+
     }
 
     /**
@@ -138,6 +167,11 @@ public class RaftPeerBuilder {
 
         if (this.logCodec == null) {
             throw new RaftException("the raft log codec not allow null");
+        }
+
+        if (this.clientPort == null) {
+
+            throw new RaftException("the local client server not allow null");
         }
 
 

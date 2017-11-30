@@ -1,10 +1,12 @@
 package com.tongbanjie.raft.core.peer.support;
 
 import com.alibaba.fastjson.JSON;
+import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
 import com.tongbanjie.raft.core.exception.RaftException;
+import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
 import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
@@ -35,6 +37,8 @@ public class RpcRaftPeer implements RaftPeer {
 
 
     private RemotingServer remotingServer;
+
+    private RemotingServer raftClientServer;
 
 
     private RemotingClient remotingClient;
@@ -107,6 +111,16 @@ public class RpcRaftPeer implements RaftPeer {
 
         if (this.remotingClient != null && this.remotingClient.isClosed()) {
             this.remotingClient.close();
+        }
+    }
+
+    public void registerRaftClientServer(String host, int port) {
+
+        if (this.raftClientServer == null) {
+            this.raftClientServer = new RemotingServerBuilder().host(host)
+                    .port(port).remotingCommandProcessor(this.remotingCommandProcessor).builder();
+        } else if (this.raftClientServer.isClosed()) {
+            this.raftClientServer.open();
         }
     }
 
@@ -208,6 +222,11 @@ public class RpcRaftPeer implements RaftPeer {
     public AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest request) {
 
         return this.raftEngine.appendEntriesHandler(request);
+    }
+
+    public void commandHandler(RaftCommand command, LogApplyListener applyListener) {
+
+        this.raftEngine.commandHandler(command, applyListener);
     }
 
 

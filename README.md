@@ -171,6 +171,15 @@ public class PeerBuilderTest {
 
 ***
 
+
+3.  shell 方式启动
+
+    1.  执行 ./install.sh 进行源码编译安装。
+    2.  执行 ./raftServer.sh 127.0.0.1:6001 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003  ./log
+    
+    
+    
+    
 ##   todolist
 
 1.  **~~日志模块~~**

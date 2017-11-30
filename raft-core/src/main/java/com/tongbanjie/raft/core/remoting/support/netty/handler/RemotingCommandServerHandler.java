@@ -41,6 +41,10 @@ public class RemotingCommandServerHandler extends SimpleChannelInboundHandler<Re
 
             this.commandProcessor.appendEntriesHandler(ctx, msg);
 
+        } else if (msg.getCommandType() == RemotingCommandType.COMMAND.getValue()) {
+
+            this.commandProcessor.commandHandler(ctx, msg);
+
         }
 
 
