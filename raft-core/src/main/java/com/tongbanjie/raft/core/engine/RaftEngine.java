@@ -714,7 +714,6 @@ public class RaftEngine {
             appendEntriesResponse.setSuccess(true);
             appendEntriesResponse.setTerm(this.term);
             appendEntriesResponse.setReason("append log success");
-            log.debug("***********************append log success**********************");
             return appendEntriesResponse;
         } finally {
             if (stepDown) {
