@@ -105,6 +105,8 @@ public class RaftEngine {
 
     private long commitIndex;
 
+    private ConcurrentHashMap<String, Long> matchIndexList = new ConcurrentHashMap<String, Long>();
+
 
     public RaftEngine(String id, RaftLogService logService) {
         this.id = id;
@@ -1151,6 +1153,7 @@ public class RaftEngine {
                         config.get(peer.getId()).setMatchIndex(newCommitIndex);
                         nextIndex.set(peer.getId(), newCommitIndex, preLogIndex);
                         log.debug("peer.match.index=" + peer.getMatchIndex());
+                        matchIndexList.put(peer.getId(), peer.getMatchIndex());
                         // start commit log
                         this.startCommitLog();
                     }
@@ -1171,24 +1174,15 @@ public class RaftEngine {
          */
         private void startCommitLog() {
 
-            List<RaftPeer> peers = config.getAllPeers().explode();
-            long[] matchIndexList = new long[peers.size()];
-            int i = 0;
-            for (RaftPeer peer : peers) {
-                if (StringUtils.equals(peer.getId(), getId())) {
-                    continue;
-                }
 
-                matchIndexList[i++] = peer.getMatchIndex();
-                log.debug("***********matchIndex***********" + peers.get(i).getMatchIndex() + ", i=" + i);
+            matchIndexList.put(getId(), logService.getLastIndex());
 
+            Collection<Long> values = matchIndexList.values();
+            Long[] matchs = new Long[values.size()];
+            values.toArray(matchs);
 
-            }
-            matchIndexList[i] = logService.getLastIndex();
-            Arrays.sort(matchIndexList);
-            log.debug("***********matchIndexList***********" + matchIndexList.toString());
-            long newCommitIndex = matchIndexList[peers.size() / 2 - 1];
-
+            Arrays.sort(matchs);
+            long newCommitIndex = matchs[matchs.length / 2 - 1];
             long lastCommittedIndex = commitIndex;
             log.debug("***********lastCommittedIndex=" + lastCommittedIndex);
             if (newCommitIndex > lastCommittedIndex) {
