@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.remoting.test;
+package com.tongbanjie.raft.test.remoting;
 
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;

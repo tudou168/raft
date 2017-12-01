@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.test.log;
+package com.tongbanjie.raft.test.base;
 
 import com.tongbanjie.raft.core.log.codec.RaftLogCodec;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;

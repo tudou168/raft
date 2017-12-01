@@ -2,7 +2,7 @@ package com.tongbanjie.raft.test.log.manage;
 
 import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.protocol.RaftLog;
-import com.tongbanjie.raft.test.log.BaseTest;
+import com.tongbanjie.raft.test.base.BaseTest;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
