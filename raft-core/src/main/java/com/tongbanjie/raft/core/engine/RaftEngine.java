@@ -1177,7 +1177,7 @@ public class RaftEngine {
                     continue;
                 }
                 matchIndexList[i] = peers.get(i).getMatchIndex();
-                log.debug("***********matchIndex***********" + peers.get(i));
+                log.debug("***********matchIndex***********" + peers.get(i).getMatchIndex());
             }
 
             matchIndexList[i] = logService.getLastIndex();
@@ -1188,7 +1188,7 @@ public class RaftEngine {
             long newCommitIndex = matchIndexList[peers.size() / 2 - 1];
 
             long lastCommittedIndex = logService.getLastCommittedIndex();
-
+            log.debug("***********lastCommittedIndex***********" + lastCommittedIndex);
             if (newCommitIndex > lastCommittedIndex) {
                 log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), newCommitIndex, term));
                 logService.commitToIndex(newCommitIndex);
