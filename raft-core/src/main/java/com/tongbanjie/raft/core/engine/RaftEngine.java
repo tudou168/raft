@@ -1184,7 +1184,7 @@ public class RaftEngine {
             }
             log.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
             matchIndexList[i] = logService.getLastIndex();
-
+            log.debug("-------------------------");
             Arrays.sort(matchIndexList);
 
             log.debug("***********matchIndexList***********" + matchIndexList.toString());
