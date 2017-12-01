@@ -1174,13 +1174,16 @@ public class RaftEngine {
             List<RaftPeer> peers = config.getAllPeers().explode();
             long[] matchIndexList = new long[peers.size()];
             int i = 0;
-            for (; i < peers.size(); i++) {
-
-                if (StringUtils.equals(peers.get(i).getId(), getId())) {
+            log.info("peers size=" + peers.size());
+            for (RaftPeer peer : peers) {
+                if (StringUtils.equals(peer.getId(), getId())) {
                     continue;
                 }
-                matchIndexList[i] = peers.get(i).getMatchIndex();
-                log.debug("***********matchIndex***********" + peers.get(i).getMatchIndex());
+
+                matchIndexList[i++] = peer.getMatchIndex();
+                log.debug("***********matchIndex***********" + peers.get(i).getMatchIndex() + ", i=" + i);
+
+
             }
             log.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
             matchIndexList[i] = logService.getLastIndex();
