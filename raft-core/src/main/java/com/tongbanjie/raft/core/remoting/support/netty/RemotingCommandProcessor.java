@@ -91,44 +91,29 @@ public class RemotingCommandProcessor {
      * @param ctx
      * @param msg
      */
-    public void commandHandler(ChannelHandlerContext ctx, RemotingCommand msg) {
+    public void commandHandler(final ChannelHandlerContext ctx, final RemotingCommand msg) {
 
         String body = msg.getBody();
         RaftCommand command = JSON.parseObject(body, RaftCommand.class);
-        final BlockingQueue<Boolean> queue = new LinkedBlockingQueue<Boolean>();
         LogApplyListener listener = new LogApplyListener() {
 
             public void notify(long commitIndex, RaftLog raftLog) {
                 try {
-                    queue.put(true);
-                } catch (InterruptedException e) {
+
+                    RemotingCommand remotingCommand = new RemotingCommand();
+                    remotingCommand.setRequestId(msg.getRequestId());
+                    remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
+                    remotingCommand.setCommandType(RemotingCommandType.COMMAND.getValue());
+                    remotingCommand.setBody("SUC");
+                    ctx.writeAndFlush(remotingCommand);
+
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         };
 
         this.peer.commandHandler(command, listener);
-
-        RemotingCommand remotingCommand = new RemotingCommand();
-        remotingCommand.setRequestId(msg.getRequestId());
-        remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
-        remotingCommand.setCommandType(RemotingCommandType.COMMAND.getValue());
-        try {
-            Boolean sec = queue.poll(3000, TimeUnit.MILLISECONDS);
-            if (sec != null && sec) {
-                remotingCommand.setBody("SUC");
-            } else {
-                remotingCommand.setBody("FAIL");
-            }
-
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            remotingCommand.setBody("FAIL");
-        }
-
-
-        ctx.writeAndFlush(remotingCommand);
 
 
     }
