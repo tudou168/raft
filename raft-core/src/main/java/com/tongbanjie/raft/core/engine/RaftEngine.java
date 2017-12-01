@@ -1182,7 +1182,7 @@ public class RaftEngine {
                 matchIndexList[i] = peers.get(i).getMatchIndex();
                 log.debug("***********matchIndex***********" + peers.get(i).getMatchIndex());
             }
-
+            log.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
             matchIndexList[i] = logService.getLastIndex();
 
             Arrays.sort(matchIndexList);
