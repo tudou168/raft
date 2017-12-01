@@ -103,6 +103,8 @@ public class RaftEngine {
 
     private AtomicBoolean running = new AtomicBoolean(false);
 
+    private long commitIndex;
+
 
     public RaftEngine(String id, RaftLogService logService) {
         this.id = id;
@@ -111,6 +113,7 @@ public class RaftEngine {
         this.replicationService = new DefaultReplicationService();
         this.config = new RaftConfiguration();
         this.logService.setConfiguration(this.config);
+        this.commitIndex = logService.getLastCommittedIndex();
     }
 
 
@@ -1187,11 +1190,12 @@ public class RaftEngine {
             log.debug("***********matchIndexList***********" + matchIndexList.toString());
             long newCommitIndex = matchIndexList[peers.size() / 2 - 1];
 
-            long lastCommittedIndex = logService.getLastCommittedIndex();
+            long lastCommittedIndex = commitIndex;
             log.debug("***********lastCommittedIndex***********" + lastCommittedIndex);
             if (newCommitIndex > lastCommittedIndex) {
                 log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), newCommitIndex, term));
                 logService.commitToIndex(newCommitIndex);
+                commitIndex = lastCommittedIndex;
 
             }
 
