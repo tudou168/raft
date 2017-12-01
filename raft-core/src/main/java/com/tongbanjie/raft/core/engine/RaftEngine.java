@@ -1148,8 +1148,9 @@ public class RaftEngine {
 
                         long newCommitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
                         //  set peer match index
-                        peer.setMatchIndex(newCommitIndex);
+                        config.get(peer.getId()).setMatchIndex(newCommitIndex);
                         nextIndex.set(peer.getId(), newCommitIndex, preLogIndex);
+                        log.debug("peer.match.index=" + peer.getMatchIndex());
                         // start commit log
                         this.startCommitLog();
                     }
