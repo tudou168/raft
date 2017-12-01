@@ -25,7 +25,7 @@ public class DefaultReplicationService implements ReplicationService {
     private final static Logger log = LoggerFactory.getLogger(DefaultReplicationService.class);
 
 
-    public void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler, Long staticsId) {
+    public void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler) {
 
 
         ReplicationLogResponseTuple tuple = new ReplicationLogResponseTuple();
@@ -39,6 +39,6 @@ public class DefaultReplicationService implements ReplicationService {
             tuple.setReason(e.getMessage());
         }
 
-        replicationLogResponseHandler.handler(peer, tuple, nextIndex, staticsId);
+        replicationLogResponseHandler.handler(peer, tuple, nextIndex);
     }
 }

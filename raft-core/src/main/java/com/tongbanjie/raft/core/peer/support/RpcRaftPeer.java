@@ -51,6 +51,9 @@ public class RpcRaftPeer implements RaftPeer {
 
     private int port;
 
+    private long matchIndex;
+
+
     public RpcRaftPeer(String id) {
 
         this.id = id;
@@ -131,6 +134,18 @@ public class RpcRaftPeer implements RaftPeer {
 
     public void setRaftEngine(RaftEngine raftEngine) {
         this.raftEngine = raftEngine;
+    }
+
+    @Override
+    public void setMatchIndex(long matchIndex) {
+
+        this.matchIndex = matchIndex;
+    }
+
+    @Override
+    public long getMatchIndex() {
+
+        return matchIndex;
     }
 
 

@@ -24,12 +24,9 @@ public interface RaftPeer {
 
     void setRaftEngine(RaftEngine raftEngine);
 
+    void setMatchIndex(long matchIndex);
 
-    RaftEngine getRaftEngine();
-
-
-    void setRemotingServer(RemotingServer remotingServer);
-
+    long getMatchIndex();
 
     boolean bootstrap();
 
@@ -57,6 +54,7 @@ public interface RaftPeer {
 
     /**
      * 追加日志
+     *
      * @param request 追加日志请求体
      * @return
      */
@@ -64,6 +62,7 @@ public interface RaftPeer {
 
     /**
      * 选举处理
+     *
      * @param electionRequest
      * @return
      */
@@ -71,6 +70,7 @@ public interface RaftPeer {
 
     /**
      * 追加日志
+     *
      * @param appendEntriesRequest
      * @return
      */

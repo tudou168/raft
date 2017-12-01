@@ -12,5 +12,5 @@ import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandle
  */
 public interface ReplicationService {
 
-    void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler, Long staticsId);
+    void replication(RaftPeer peer, AppendEntriesRequest request, NextIndex nextIndex, ReplicationLogResponseHandler replicationLogResponseHandler);
 }

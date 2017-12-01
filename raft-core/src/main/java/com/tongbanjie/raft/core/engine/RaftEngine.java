@@ -1,7 +1,6 @@
 package com.tongbanjie.raft.core.engine;
 
 import com.alibaba.fastjson.JSON;
-import com.tongbanjie.raft.core.bootstrap.RaftPeerBuilder;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.constant.RaftConstant;
@@ -22,20 +21,14 @@ import com.tongbanjie.raft.core.protocol.*;
 import com.tongbanjie.raft.core.replication.ReplicationService;
 import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandler;
 import com.tongbanjie.raft.core.replication.support.DefaultReplicationService;
-import com.tongbanjie.raft.core.util.RequestIdGenerator;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -90,6 +83,9 @@ public class RaftEngine {
     //  选举超时调度器
     private ScheduledFuture electionTimeoutScheduledFuture;
 
+    //  心跳调度器
+    private ScheduledFuture heartbeatScheduledFuture;
+
     //  日志并发刷新调度器
     private ScheduledFuture replicationScheduledFuture;
 
@@ -106,12 +102,6 @@ public class RaftEngine {
 
 
     private AtomicBoolean running = new AtomicBoolean(false);
-
-
-    /**
-     * 统计各个 peer 日志刷新同步状态
-     */
-    private ConcurrentHashMap<Long, ConcurrentHashMap<String, Boolean>> appendStatistics = new ConcurrentHashMap<Long, ConcurrentHashMap<String, Boolean>>();
 
 
     public RaftEngine(String id, RaftLogService logService) {
@@ -451,7 +441,7 @@ public class RaftEngine {
     private void electionVote(RaftPeer peer) {
 
         this.lock.readLock().lock();
-        ElectionRequest electionRequest = null;
+        ElectionRequest electionRequest;
         try {
             if (this.isOnlySelf()) {
                 return;
@@ -685,7 +675,6 @@ public class RaftEngine {
 
                     if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() && raftLog.getContent() != null && raftLog.getContent().length > 0) {
 
-
                         String content = new String(raftLog.getContent());
 
                         if (content.startsWith(RaftConstant.join)) {
@@ -838,16 +827,6 @@ public class RaftEngine {
 
     private void concurrentReplication(List<RaftPeer> recipients) {
 
-
-        final long staticsId = RequestIdGenerator.getRequestId();
-        this.appendStatistics.remove(staticsId);
-        this.appendStatistics.put(staticsId, new ConcurrentHashMap<String, Boolean>());
-        ConcurrentHashMap<String, Boolean> statisticsList = this.appendStatistics.get(staticsId);
-
-        //  自己已经追加
-        statisticsList.put(getId(), true);
-
-
         for (final RaftPeer raftPeer : recipients) {
 
             long term = this.getTerm();
@@ -866,7 +845,7 @@ public class RaftEngine {
             this.executorService.submit(new Runnable() {
                 public void run() {
                     //发送请求
-                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request), staticsId);
+                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request));
                 }
             });
         }
@@ -905,6 +884,39 @@ public class RaftEngine {
         }
 
     }
+
+
+    /**
+     * 重置心跳定时器
+     */
+    private void resetHeartbeatTimer() {
+
+        if (this.heartbeatScheduledFuture != null && !this.heartbeatScheduledFuture.isDone()) {
+            this.heartbeatScheduledFuture.cancel(true);
+        }
+
+        this.heartbeatScheduledFuture = this.scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+
+                startHeartbeat();
+
+            }
+        }, RaftConstant.heartbeatIntervalTimeMs, RaftConstant.heartbeatIntervalTimeMs, TimeUnit.MILLISECONDS);
+
+    }
+
+
+    /**
+     * 停止心跳定时器
+     */
+    private void stopHeartbeatTimer() {
+
+        if (this.heartbeatScheduledFuture != null && !this.heartbeatScheduledFuture.isDone()) {
+            this.heartbeatScheduledFuture.cancel(true);
+        }
+
+    }
+
 
     /**
      * 重置并发复制日志定时器
@@ -949,6 +961,18 @@ public class RaftEngine {
         return RaftConstant.electionTimeoutMs + random.nextInt(RaftConstant.electionTimeoutMs);
     }
 
+
+    /***
+     * 开始发送心跳
+     */
+    private void startHeartbeat() {
+
+        if (this.isOnlySelf()) {
+            return;
+        }
+        log.debug(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
+        this.appendLogEntry("heartbeat".getBytes(), null);
+    }
 
     /**
      * @notice 此方法只有在 peer 节点状态为 leader时候才能调用
@@ -1058,6 +1082,10 @@ public class RaftEngine {
             log.info(String.format(">>>>>>>>>>>%s stop election timeout timer...<<<<<<<<<<", getId()));
             // 停止选举超时定时器
             stopElectionTimeoutTimer();
+
+            log.info(String.format(">>>>>>>>>>>%s start send heartbeat schedule timer.....<<<<<<<<<<", getId()));
+            resetHeartbeatTimer();
+
             log.info(String.format(">>>>>>>>>>>%s start concurrent replication log schedule timer .....<<<<<<<<<<", getId()));
             resetReplicationScheduledTimer();
 
@@ -1078,17 +1106,13 @@ public class RaftEngine {
             this.request = request;
         }
 
-        public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex, Long staticsId) {
+        public void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex) {
 
 
             log.debug(String.format("%s replication response handler %s,response %s", getId(), peer.getId(), tuple));
 
             lock.writeLock().lock();
 
-            ConcurrentHashMap<String, Boolean> staticsList = appendStatistics.get(staticsId);
-            if (staticsList != null) {
-                staticsList.put(peer.getId(), false);
-            }
 
             try {
                 long preLogIndex = request.getPreLogIndex();
@@ -1119,18 +1143,12 @@ public class RaftEngine {
 
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
 
-                        if (staticsList != null) {
-                            staticsList.put(peer.getId(), true);
-                        }
-                        if (config.pass(staticsList)) {
-                            long commitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
-                            log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), commitIndex, term));
-                            // 提交本地日志
-                            logService.commitToIndex(commitIndex);
-                        }
-
-                        nextIndex.set(peer.getId(), logService.getLastIndex(), preLogIndex);
-                        return;
+                        long newCommitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
+                        //  set peer match index
+                        peer.setMatchIndex(newCommitIndex);
+                        nextIndex.set(peer.getId(), newCommitIndex, preLogIndex);
+                        // start commit log
+                        this.startCommitLog();
                     }
 
 
@@ -1140,12 +1158,41 @@ public class RaftEngine {
 
             } finally {
 
-
-                if (staticsList != null && staticsList.size() > config.getAllPeers().quorum()) {
-                    appendStatistics.remove(staticsId);
-                }
                 lock.writeLock().unlock();
             }
+        }
+
+        /**
+         *
+         */
+        private void startCommitLog() {
+
+            List<RaftPeer> peers = config.getAllPeers().explode();
+            long[] matchIndexList = new long[peers.size()];
+            int i = 0;
+            for (; i < peers.size(); i++) {
+
+                if (StringUtils.equals(peers.get(i).getId(), getId())) {
+                    continue;
+                }
+                matchIndexList[i] = peers.get(i).getMatchIndex();
+            }
+
+            matchIndexList[i] = logService.getLastIndex();
+
+            Arrays.sort(matchIndexList);
+
+            long newCommitIndex = matchIndexList[peers.size() / 2];
+
+            long lastCommittedIndex = logService.getLastCommittedIndex();
+
+            if (newCommitIndex > lastCommittedIndex) {
+                log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), newCommitIndex, term));
+                logService.commitToIndex(newCommitIndex);
+
+            }
+
+
         }
     }
 
@@ -1159,6 +1206,7 @@ public class RaftEngine {
         this.state = follower;
         log.info(String.format("%s  stop replication timer in the %s term", getId(), term));
         this.stopReplicationScheduledTimer();
+        this.stopHeartbeatTimer();
         log.info(String.format("%s  reset election timeout timer in the %s term", getId(), term));
         this.resetElectionTimeoutTimer();
     }
