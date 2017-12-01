@@ -14,10 +14,6 @@ public class RaftConstant {
     //  存储日志文件
     public final static String dataStoreFile = ".raft";
 
-    //  默认端口
-    public final static int defaultPort = 9876;
-
-
     //  raft engine state
     public final static String leader = "leader";
 
