@@ -1144,6 +1144,7 @@ public class RaftEngine {
                     if (request.getEntries() != null && !request.getEntries().isEmpty()) {
 
                         long newCommitIndex = request.getEntries().get(request.getEntries().size() - 1).getIndex();
+                        log.debug("&&&&&&&&&&&&&>>>>newCommitIndex=" + newCommitIndex);
                         //  set peer match index
                         peer.setMatchIndex(newCommitIndex);
                         nextIndex.set(peer.getId(), newCommitIndex, preLogIndex);
@@ -1176,13 +1177,15 @@ public class RaftEngine {
                     continue;
                 }
                 matchIndexList[i] = peers.get(i).getMatchIndex();
+                log.debug("***********matchIndex***********" + peers.get(i));
             }
 
             matchIndexList[i] = logService.getLastIndex();
 
             Arrays.sort(matchIndexList);
 
-            long newCommitIndex = matchIndexList[peers.size() / 2];
+            log.debug("***********matchIndexList***********" + matchIndexList.toString());
+            long newCommitIndex = matchIndexList[peers.size() / 2 - 1];
 
             long lastCommittedIndex = logService.getLastCommittedIndex();
 
