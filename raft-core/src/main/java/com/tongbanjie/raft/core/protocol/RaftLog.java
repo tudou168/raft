@@ -5,12 +5,14 @@ import com.tongbanjie.raft.core.listener.LogApplyListener;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
+import java.io.Serializable;
+
 /***
  * raft log 实体
  * @author banxia
  * @date 2017-11-14 17:17:45
  */
-public class RaftLog {
+public class RaftLog implements Serializable {
 
 
     //  序号

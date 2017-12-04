@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.bootstrap;
+package com.tongbanjie.raft.core.builder;
 
 import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.engine.RaftEngine;
@@ -17,16 +17,10 @@ import java.util.List;
 
 /***
  *
- *
- *            |         |
- * -----------local peer--> server peers
- *            |        |
- *  raft peer 构造器
  * @author banxia
- * @date 2017-11-28 14:14:29
+ * @date 2017-12-04 17:17:39
  */
 public class RaftPeerBuilder {
-
 
     //  本地服务地址
     private String localServer;
@@ -95,7 +89,9 @@ public class RaftPeerBuilder {
 
         // register local server  accept the client connect
         this.registerLocalServer(localPeer);
-        localPeer.registerServer();
+
+        localPeer.registerRaftTransportServer();
+
         List<RaftPeer> raftPeers = this.buildPeers();
         RaftEngine localEngine = new RaftEngine(localServer, logService);
         localPeer.setRaftEngine(localEngine);
@@ -109,12 +105,11 @@ public class RaftPeerBuilder {
      *
      * @param localPeer
      */
-    private void registerLocalServer(RpcRaftPeer localPeer) {
+    private void registerLocalServer(RaftPeer localPeer) {
 
         InetAddress localAddress = NetUtil.getLocalAddress();
         String host = localAddress.getHostAddress();
-
-        localPeer.registerRaftClientServer(host, clientPort);
+        localPeer.registerRaftClientTransportServer(host, clientPort);
 
     }
 
@@ -131,7 +126,7 @@ public class RaftPeerBuilder {
 
             RaftPeer raftPeer = new RpcRaftPeer(server);
             // register the remoting client
-            raftPeer.registerRemotingClient();
+            raftPeer.registerRaftTransportClient();
             raftPeers.add(raftPeer);
         }
 
@@ -174,6 +169,4 @@ public class RaftPeerBuilder {
 
 
     }
-
-
 }

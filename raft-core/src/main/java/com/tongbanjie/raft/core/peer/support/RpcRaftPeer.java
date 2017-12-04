@@ -1,29 +1,24 @@
 package com.tongbanjie.raft.core.peer.support;
 
-import com.alibaba.fastjson.JSON;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.engine.RaftEngine;
-import com.tongbanjie.raft.core.enums.RemotingCommandState;
-import com.tongbanjie.raft.core.enums.RemotingCommandType;
-import com.tongbanjie.raft.core.exception.RaftException;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
 import com.tongbanjie.raft.core.peer.RaftPeer;
+import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
+import com.tongbanjie.raft.core.peer.support.server.impl.RaftClientServiceImpl;
+import com.tongbanjie.raft.core.peer.support.server.RaftService;
+import com.tongbanjie.raft.core.peer.support.server.impl.RaftServiceImpl;
 import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
 import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
 import com.tongbanjie.raft.core.protocol.ElectionRequest;
 import com.tongbanjie.raft.core.protocol.ElectionResponse;
-import com.tongbanjie.raft.core.remoting.RemotingClient;
-import com.tongbanjie.raft.core.remoting.RemotingCommand;
-import com.tongbanjie.raft.core.remoting.RemotingServer;
-import com.tongbanjie.raft.core.remoting.builder.RemotingClientBuilder;
-import com.tongbanjie.raft.core.remoting.builder.RemotingServerBuilder;
-import com.tongbanjie.raft.core.remoting.support.netty.NettyClient;
-import com.tongbanjie.raft.core.remoting.support.netty.NettyServer;
 import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
-import com.tongbanjie.raft.core.util.RequestIdGenerator;
-
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.tongbanjie.raft.core.transport.TransportClient;
+import com.tongbanjie.raft.core.transport.TransportServer;
+import com.tongbanjie.raft.core.transport.builder.NettyClientBuilder;
+import com.tongbanjie.raft.core.transport.builder.NettyServerBuilder;
+import com.tongbanjie.raft.core.transport.netty.serialization.support.Hessian2Serialization;
+import com.tongbanjie.raft.core.transport.proxy.support.JdkTransportClientProxy;
 
 /***
  * 基于rpc方式的 raft peer
@@ -34,14 +29,6 @@ public class RpcRaftPeer implements RaftPeer {
 
 
     private RaftEngine raftEngine;
-
-
-    private RemotingServer remotingServer;
-
-    private RemotingServer raftClientServer;
-
-
-    private RemotingClient remotingClient;
 
     private RemotingCommandProcessor remotingCommandProcessor = new RemotingCommandProcessor(this);
 
@@ -54,6 +41,17 @@ public class RpcRaftPeer implements RaftPeer {
     private long matchIndex;
 
 
+    private TransportClient transportClient;
+
+    private TransportServer transportServer;
+
+    private TransportServer raftClientTransportServer;
+
+    private RaftClientService raftClientService;
+
+    private RaftService raftService;
+
+
     public RpcRaftPeer(String id) {
 
         this.id = id;
@@ -61,11 +59,6 @@ public class RpcRaftPeer implements RaftPeer {
         this.host = split[0];
         this.port = Integer.valueOf(split[1]);
 
-    }
-
-
-    public void setRemotingServer(RemotingServer remotingServer) {
-        this.remotingServer = remotingServer;
     }
 
     /**
@@ -76,55 +69,6 @@ public class RpcRaftPeer implements RaftPeer {
     public boolean bootstrap() {
         this.raftEngine.bootstrap();
         return true;
-    }
-
-
-    /**
-     * 注册服务
-     */
-    public void registerServer() {
-
-        if (this.remotingServer == null) {
-
-            this.remotingServer = new RemotingServerBuilder().host(host)
-                    .port(port).remotingCommandProcessor(this.remotingCommandProcessor).builder();
-
-        }
-    }
-
-    /**
-     * 取消注册服务
-     */
-    public void unregisterServer() {
-        if (this.remotingServer != null && !this.remotingServer.isClosed()) {
-            this.remotingServer.close();
-        }
-    }
-
-    public void registerRemotingClient() {
-        if (this.remotingClient == null) {
-            this.remotingClient = new RemotingClientBuilder().host(host).port(port).requestTimeout(3000).builder();
-        }
-        if (!this.remotingClient.isAvailable()) {
-            this.remotingClient.open();
-        }
-    }
-
-    public void unregisterRemotingClient() {
-
-        if (this.remotingClient != null && this.remotingClient.isClosed()) {
-            this.remotingClient.close();
-        }
-    }
-
-    public void registerRaftClientServer(String host, int port) {
-
-        if (this.raftClientServer == null) {
-            this.raftClientServer = new RemotingServerBuilder().host(host)
-                    .port(port).remotingCommandProcessor(this.remotingCommandProcessor).builder();
-        } else if (this.raftClientServer.isClosed()) {
-            this.raftClientServer.open();
-        }
     }
 
 
@@ -153,25 +97,6 @@ public class RpcRaftPeer implements RaftPeer {
         return id;
     }
 
-    public RemotingClient getRemotingClient() {
-
-
-        if (remotingClient == null || remotingClient.isClosed()) {
-            remotingClient = new NettyClient();
-            String[] split = this.id.split(":");
-            String host = split[0];
-            int port = Integer.valueOf(split[1]);
-            boolean open = remotingClient.open();
-            if (!open) {
-                throw new RaftException("the netty client open fail");
-            }
-        }
-        return this.remotingClient;
-    }
-
-    public RemotingServer getRemotingServer() {
-        return this.remotingServer;
-    }
 
     /**
      * 发起投票选举
@@ -181,50 +106,27 @@ public class RpcRaftPeer implements RaftPeer {
      */
     public ElectionResponse electionVote(ElectionRequest request) {
 
-        RemotingClient remotingClient = this.getRemotingClient();
 
-        long requestId = RequestIdGenerator.getRequestId();
-        RemotingCommand command = new RemotingCommand();
-        command.setRequestId(requestId);
-        command.setCommandType(RemotingCommandType.ELECTION.getValue());
-        command.setBody(JSON.toJSONString(request));
-        command.setState(RemotingCommandState.SUCCESS.getValue());
-        RemotingCommand remotingCommand = remotingClient.request(command);
-
-        if (remotingCommand != null && remotingCommand.getState() == RemotingCommandState.SUCCESS.getValue()) {
-
-            return JSON.parseObject(remotingCommand.getBody(), ElectionResponse.class);
-        } else {
-
-            throw new RaftException("election vote request fail ");
-
-        }
-
-
-    }
-
-    public AppendEntriesResponse appendEntries(AppendEntriesRequest request) {
-
-        long requestId = RequestIdGenerator.getRequestId();
-        RemotingCommand command = new RemotingCommand();
-        command.setRequestId(requestId);
-        command.setCommandType(RemotingCommandType.APPEND.getValue());
-        command.setBody(JSON.toJSONString(request));
-        command.setState(RemotingCommandState.SUCCESS.getValue());
-        RemotingCommand remotingCommand = remotingClient.request(command);
-        if (remotingCommand != null && remotingCommand.getState() == RemotingCommandState.SUCCESS.getValue()) {
-
-            return JSON.parseObject(remotingCommand.getBody(), AppendEntriesResponse.class);
-
-        } else {
-
-            throw new RaftException("append entries request fail");
-
-        }
+        return this.raftService.electionVote(request);
     }
 
     /**
-     * @param electionRequest
+     * 追加日志
+     *
+     * @param request 追加日志请求体
+     * @return
+     */
+    public AppendEntriesResponse appendEntries(AppendEntriesRequest request) {
+
+        return this.raftService.appendEntries(request);
+
+    }
+
+
+    /**
+     * 选举处理
+     *
+     * @param electionRequest 投票选举请求实体
      * @return
      */
     public ElectionResponse electionVoteHandler(ElectionRequest electionRequest) {
@@ -234,6 +136,12 @@ public class RpcRaftPeer implements RaftPeer {
 
     }
 
+    /**
+     * 追加日志处理
+     *
+     * @param request 追加日志请求实体
+     * @return
+     */
     public AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest request) {
 
         return this.raftEngine.appendEntriesHandler(request);
@@ -242,6 +150,82 @@ public class RpcRaftPeer implements RaftPeer {
     public void commandHandler(RaftCommand command, LogApplyListener applyListener) {
 
         this.raftEngine.commandHandler(command, applyListener);
+    }
+
+
+    /**
+     * 注册 raft client 服务
+     *
+     * @param host       ip
+     * @param clientPort 本地客户端监听端口
+     */
+    @Override
+    public void registerRaftClientTransportServer(String host, Integer clientPort) {
+
+        if (this.raftClientTransportServer == null) {
+
+            NettyServerBuilder<RaftClientService> builder = new NettyServerBuilder<RaftClientService>();
+            this.raftClientTransportServer = builder.port(clientPort)
+                    .host(host)
+                    .ref(new RaftClientServiceImpl(this))
+                    .serialization(new Hessian2Serialization())
+                    .threadNum(Runtime.getRuntime().availableProcessors())
+                    .builder();
+
+        } else if (this.raftClientTransportServer.isClosed()) {
+            this.raftClientTransportServer.open();
+        }
+    }
+
+    /**
+     * 注册 连接 raft 服务客户端
+     */
+    @Override
+    public void registerRaftTransportClient() {
+
+        if (this.transportClient == null) {
+            NettyClientBuilder<RaftService> nettyClientBuilder = new NettyClientBuilder<RaftService>();
+            this.raftService = nettyClientBuilder.port(this.port)
+                    .host(this.host)
+                    .serialization(new Hessian2Serialization())
+                    .serviceInterface(RaftService.class)
+                    .requestTimeout(6000)
+                    .transportClientProxy(new JdkTransportClientProxy()).builder();
+        }
+
+
+    }
+
+    /**
+     * 注册 raft 服务
+     */
+    @Override
+    public void registerRaftTransportServer() {
+
+        if (this.transportServer == null) {
+
+            NettyServerBuilder<RaftService> builder = new NettyServerBuilder<RaftService>();
+            this.transportServer = builder.port(this.port)
+                    .host(host)
+                    .ref(new RaftServiceImpl(this))
+                    .serialization(new Hessian2Serialization())
+                    .threadNum(Runtime.getRuntime().availableProcessors())
+                    .builder();
+        } else if (this.transportServer.isClosed()) {
+            this.transportServer.open();
+        }
+    }
+
+    @Override
+    public void unregisterRaftTransportClient() {
+        if (this.transportClient != null && this.transportClient.isAvailable()) {
+            try {
+
+                this.transportClient.close();
+            } catch (Exception e) {
+
+            }
+        }
     }
 
 

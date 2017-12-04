@@ -30,25 +30,6 @@ public interface RaftPeer {
 
     boolean bootstrap();
 
-
-    /**
-     * 注册服务
-     */
-    void registerServer();
-
-    /**
-     * 取消注册服务
-     */
-    void unregisterServer();
-
-
-    void registerRemotingClient();
-
-    void unregisterRemotingClient();
-
-
-    void registerRaftClientServer(String host, int port);
-
     //  发起选举投票请求
     ElectionResponse electionVote(ElectionRequest request);
 
@@ -84,6 +65,15 @@ public interface RaftPeer {
      * @param applyListener
      */
     void commandHandler(RaftCommand command, LogApplyListener applyListener);
+
+
+    void registerRaftClientTransportServer(String host, Integer clientPort);
+
+    void registerRaftTransportClient();
+
+    void registerRaftTransportServer();
+
+    void unregisterRaftTransportClient();
 
 
 }

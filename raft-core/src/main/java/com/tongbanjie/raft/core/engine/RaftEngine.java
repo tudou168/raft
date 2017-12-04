@@ -258,7 +258,7 @@ public class RaftEngine {
         //
         RaftPeer raftPeer = new RpcRaftPeer(connectStr);
         // register the remoting client
-        raftPeer.registerRemotingClient();
+        raftPeer.registerRaftTransportClient();
 
         long lastIndex = this.logService.getLastIndex();
         lastIndex = lastIndex + 1;
@@ -285,7 +285,7 @@ public class RaftEngine {
 
             RaftPeer p = new RpcRaftPeer(peer.getId());
             // register the remoting client
-            p.registerRemotingClient();
+            p.registerRaftTransportClient();
             raftPeerMap.put(p.getId(), p);
         }
 
@@ -346,7 +346,7 @@ public class RaftEngine {
             }
             RaftPeer p = new RpcRaftPeer(peer.getId());
             // register the remoting client
-            p.registerRemotingClient();
+            p.registerRaftTransportClient();
             raftPeerMap.put(p.getId(), p);
         }
         cluster.setPeers(raftPeerMap);
@@ -753,7 +753,7 @@ public class RaftEngine {
         for (String server : servers) {
             RaftPeer p = new RpcRaftPeer(server);
             // register the remoting client
-            p.registerRemotingClient();
+            p.registerRaftTransportClient();
             raftPeerMap.put(p.getId(), p);
         }
         cluster.setPeers(raftPeerMap);
@@ -794,7 +794,7 @@ public class RaftEngine {
         for (String server : servers) {
             RaftPeer p = new RpcRaftPeer(server);
             // register the remoting client
-            p.registerRemotingClient();
+            p.registerRaftTransportClient();
             raftPeerMap.put(p.getId(), p);
         }
         cluster.setPeers(raftPeerMap);

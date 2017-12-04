@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.test.peer;
 
-import com.tongbanjie.raft.core.bootstrap.RaftPeerBuilder;
+import com.tongbanjie.raft.core.builder.RaftPeerBuilder;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 

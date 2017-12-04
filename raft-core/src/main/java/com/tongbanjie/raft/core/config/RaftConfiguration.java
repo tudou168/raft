@@ -227,7 +227,7 @@ public class RaftConfiguration {
 
                 try {
 
-                    peer.unregisterRemotingClient();
+                    peer.unregisterRaftTransportClient();
 
                 } catch (Exception e) {
                     log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
@@ -265,7 +265,7 @@ public class RaftConfiguration {
 
                 try {
 
-                    peer.unregisterRemotingClient();
+                    peer.unregisterRaftTransportClient();
 
                 } catch (Exception e) {
                     log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);

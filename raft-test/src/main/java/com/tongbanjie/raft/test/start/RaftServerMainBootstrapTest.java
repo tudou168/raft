@@ -1,10 +1,9 @@
 package com.tongbanjie.raft.test.start;
 
-import com.tongbanjie.raft.core.bootstrap.RaftPeerBuilder;
+import com.tongbanjie.raft.core.builder.RaftPeerBuilder;
 import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 
-import java.io.File;
 
 /***
  *
@@ -15,7 +14,7 @@ public class RaftServerMainBootstrapTest {
 
 
     public static void main(String[] args) {
-        args = new String[]{"192.168.124.51:6001", "192.168.124.51:6001,192.168.124.51:6002,192.168.124.51:6003", "./log", ".raft", "7001"};
+        args = new String[]{"192.168.124.40:6003", "192.168.124.40:6001,192.168.124.40:6002,192.168.124.40:6003", "./log", ".raft", "7003"};
         if (args == null || args.length < 4) {
             System.err.println("args has no enough!");
             System.exit(1);
