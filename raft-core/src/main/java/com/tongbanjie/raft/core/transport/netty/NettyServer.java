@@ -1,10 +1,7 @@
 package com.tongbanjie.raft.core.transport.netty;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
-import com.tongbanjie.raft.core.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
 import com.tongbanjie.raft.core.transport.AbstractTransportServer;
-import com.tongbanjie.raft.core.transport.Request;
-import com.tongbanjie.raft.core.transport.Response;
 import com.tongbanjie.raft.core.transport.enums.ChannelType;
 import com.tongbanjie.raft.core.transport.enums.TransportChannelState;
 import com.tongbanjie.raft.core.transport.netty.codec.NettyDecoder;
@@ -16,14 +13,11 @@ import com.tongbanjie.raft.core.util.NetUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.Method;
 
 /***
  *

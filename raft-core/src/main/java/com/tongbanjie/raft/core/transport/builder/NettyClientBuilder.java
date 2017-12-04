@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.core.transport.builder;
 
-import com.tongbanjie.raft.core.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
 import com.tongbanjie.raft.core.transport.TransportClient;
 import com.tongbanjie.raft.core.transport.netty.NettyClient;
 import com.tongbanjie.raft.core.transport.netty.serialization.Serialization;

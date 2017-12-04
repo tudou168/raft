@@ -1,7 +1,7 @@
 package com.tongbanjie.raft.core.transport.netty.dispatcher;
 
-import com.tongbanjie.raft.core.exception.TransportException;
-import com.tongbanjie.raft.core.exception.TransportMethodNotFoundException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportMethodNotFoundException;
 import com.tongbanjie.raft.core.transport.Request;
 import com.tongbanjie.raft.core.transport.Response;
 import com.tongbanjie.raft.core.transport.netty.RequestWrapper;

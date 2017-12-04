@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.exception;
+package com.tongbanjie.raft.core.transport.exception;
 
 /***
  *

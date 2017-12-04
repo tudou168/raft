@@ -1,7 +1,7 @@
 package com.tongbanjie.raft.core.transport.netty;
 
-import com.tongbanjie.raft.core.exception.TransportException;
-import com.tongbanjie.raft.core.exception.TransportTimeoutException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportTimeoutException;
 import com.tongbanjie.raft.core.transport.FutureListener;
 import com.tongbanjie.raft.core.transport.Request;
 import com.tongbanjie.raft.core.transport.Response;

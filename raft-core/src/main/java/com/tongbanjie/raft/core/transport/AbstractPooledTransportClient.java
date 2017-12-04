@@ -1,6 +1,6 @@
 package com.tongbanjie.raft.core.transport;
 
-import com.tongbanjie.raft.core.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;

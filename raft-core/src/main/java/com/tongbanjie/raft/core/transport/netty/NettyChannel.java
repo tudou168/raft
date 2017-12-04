@@ -1,10 +1,8 @@
 package com.tongbanjie.raft.core.transport.netty;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
-import com.tongbanjie.raft.core.exception.TransportException;
-import com.tongbanjie.raft.core.exception.TransportTimeoutException;
+import com.tongbanjie.raft.core.transport.exception.TransportException;
+import com.tongbanjie.raft.core.transport.exception.TransportTimeoutException;
 import com.tongbanjie.raft.core.transport.Request;
-import com.tongbanjie.raft.core.transport.Response;
 import com.tongbanjie.raft.core.transport.ResponseFuture;
 import com.tongbanjie.raft.core.transport.TransportCaller;
 import com.tongbanjie.raft.core.transport.enums.TransportChannelState;
@@ -13,7 +11,6 @@ import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /***
