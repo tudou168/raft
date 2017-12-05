@@ -8,8 +8,6 @@ import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
 import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
 import com.tongbanjie.raft.core.protocol.ElectionRequest;
 import com.tongbanjie.raft.core.protocol.ElectionResponse;
-import com.tongbanjie.raft.core.remoting.RemotingClient;
-import com.tongbanjie.raft.core.remoting.RemotingServer;
 
 /***
  *
