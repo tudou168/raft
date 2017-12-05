@@ -177,8 +177,10 @@ public class PeerBuilderTest {
     1.  执行 ./install.sh 进行源码编译安装。
     2.  执行 ./raftServer.sh 127.0.0.1:6001 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003  ./log
     
-    
-    
+4.  1.启动 raft 客户端
+    ```shell
+        ./raftCli.sh  -server 192.168.124.40:7001
+    ```
     
 ##   todolist
 
