@@ -6,9 +6,6 @@ import com.tongbanjie.raft.core.constant.RaftConstant;
 import com.tongbanjie.raft.core.enums.RaftCommandType;
 import com.tongbanjie.raft.core.enums.RemotingCommandState;
 import com.tongbanjie.raft.core.enums.RemotingCommandType;
-import com.tongbanjie.raft.core.remoting.RemotingClient;
-import com.tongbanjie.raft.core.remoting.RemotingCommand;
-import com.tongbanjie.raft.core.remoting.builder.RemotingClientBuilder;
 import com.tongbanjie.raft.core.util.NetUtil;
 import com.tongbanjie.raft.core.util.RequestIdGenerator;
 import org.apache.commons.lang.StringUtils;
@@ -34,50 +31,6 @@ public class RaftClientMainBootstrapTest {
             System.exit(1);
         }
 
-        RemotingClient client = null;
-        try {
-
-            String command = arguments.get(0);
-            String server = arguments.get(1);
-            String[] ipp = server.split(":");
-            String host = ipp[0];
-            RaftCommand raftCommand = new RaftCommand();
-            raftCommand.setName(command);
-            if (StringUtils.equals(command, RaftConstant.join)) {
-                raftCommand.setType(RaftCommandType.JOIN.getValue());
-            } else if (StringUtils.equals(command, RaftConstant.leave)) {
-                raftCommand.setType(RaftCommandType.LEAVE.getValue());
-            } else {
-                System.out.println("inval command !");
-                System.exit(1);
-            }
-
-            InetAddress localAddress = NetUtil.getLocalAddress();
-            String hostAddress = localAddress.getHostAddress();
-            raftCommand.setConnectStr(hostAddress + ":6001");
-
-            RemotingClientBuilder clientBuilder = new RemotingClientBuilder();
-            client = clientBuilder.requestTimeout(6000 * 10).host(host).port(5001).builder();
-
-            RemotingCommand remotingCommand = new RemotingCommand();
-            remotingCommand.setRequestId(RequestIdGenerator.getRequestId());
-            remotingCommand.setBody(JSON.toJSONString(raftCommand));
-            remotingCommand.setCommandType(RemotingCommandType.COMMAND.getValue());
-            remotingCommand.setState(RemotingCommandState.SUCCESS.getValue());
-            RemotingCommand response = client.request(remotingCommand);
-
-            System.out.println(response.getBody());
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("操作失败:" + e.getMessage());
-            System.exit(1);
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
 
     }
 

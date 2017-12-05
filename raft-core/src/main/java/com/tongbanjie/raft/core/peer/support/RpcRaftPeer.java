@@ -12,7 +12,6 @@ import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
 import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
 import com.tongbanjie.raft.core.protocol.ElectionRequest;
 import com.tongbanjie.raft.core.protocol.ElectionResponse;
-import com.tongbanjie.raft.core.remoting.support.netty.RemotingCommandProcessor;
 import com.tongbanjie.raft.core.transport.TransportClient;
 import com.tongbanjie.raft.core.transport.TransportServer;
 import com.tongbanjie.raft.core.transport.builder.NettyClientBuilder;
@@ -30,7 +29,6 @@ public class RpcRaftPeer implements RaftPeer {
 
     private RaftEngine raftEngine;
 
-    private RemotingCommandProcessor remotingCommandProcessor = new RemotingCommandProcessor(this);
 
     private String id;
 
