@@ -10,7 +10,8 @@ public enum RaftLogType {
     //  数据
     DATA(1),
     // 配置
-    CONFIGURATION(2);
+    CONFIGURATION(2),
+    CONFIGURATION_NEW(3);
 
     private final int value;
 

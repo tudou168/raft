@@ -6,6 +6,7 @@ localServer=$1
 servers=$2
 
 logPath=$3
+clientPort=$5
 
 if  [ ! -n "$localServer" ]; then
     echo    "local server not allow null "
@@ -46,4 +47,4 @@ echo "set env..."
 echo $CLASSPATH
 
 echo "start raft server..."
-java -cp $CLASSPATH/raft-core-1.0.jar com.tongbanjie.raft.core.bootstrap.RaftServerMainBootstrap $localServer $servers $logPath/$localServer .raft
+java -cp $CLASSPATH/raft-core-1.0.jar com.tongbanjie.raft.core.bootstrap.RaftServerMainBootstrap $localServer $servers $logPath  .raft $clientPort

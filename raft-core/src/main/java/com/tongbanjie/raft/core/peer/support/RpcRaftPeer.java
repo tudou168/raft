@@ -227,16 +227,12 @@ public class RpcRaftPeer implements RaftPeer {
     /**
      * join the raft cluster
      *
-     * @param raftCommand
+     * @param raftCommand join raft cluster body
      * @return
      */
     @Override
     public JoinResponse joinCluster(RaftCommand raftCommand) {
 
-        //1.    check has leader
-        //2.    not leader
-        //3.    leader
-        //  TODO
         return this.raftEngine.joinCluster(raftCommand);
     }
 

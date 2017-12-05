@@ -1,7 +1,7 @@
 # Raft 项目
 ***
 
-[raft 参数地址](https://raft.github.io/)
+[raft 参考地址](https://raft.github.io/)
 
 ##    概述
 ***

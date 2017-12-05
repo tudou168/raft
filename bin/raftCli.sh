@@ -11,4 +11,4 @@ echo "set env..."
 . $raft_bin_dir/raftEnv.sh
 
 echo "start raft server..."
-java -cp $CLASSPATH/raft-core-1.0.jar com.tongbanjie.raft.core.bootstrap.RaftClientMainBootstrap "$@"
+java -Draft.cfg.file=${raft_cfg_dir}/${raft_cfg} -cp $CLASSPATH/raft-core-1.0.jar com.tongbanjie.raft.core.bootstrap.RaftClientMainBootstrap "$@"

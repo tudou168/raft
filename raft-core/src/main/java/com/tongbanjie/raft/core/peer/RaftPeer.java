@@ -19,6 +19,8 @@ public interface RaftPeer {
 
     void setRaftEngine(RaftEngine raftEngine);
 
+    RaftEngine getRaftEngine();
+
     void setMatchIndex(long matchIndex);
 
     long getMatchIndex();

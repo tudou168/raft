@@ -1,6 +1,7 @@
 package com.tongbanjie.raft.core.engine;
 
 import com.alibaba.fastjson.JSON;
+import com.tongbanjie.raft.core.builder.RaftPeerBuilder;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.constant.RaftConstant;
@@ -196,6 +197,76 @@ public class RaftEngine {
 
     }
 
+
+    /**
+     * join the cluster
+     *
+     * @param raftCommand join cluster body
+     * @return
+     */
+    public JoinResponse joinCluster(RaftCommand raftCommand) {
+
+        this.lock.writeLock().lock();
+        JoinResponse joinResponse = new JoinResponse();
+        try {
+
+            if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
+                joinResponse.setReason("the raft config is cOld,New state reject the operation!");
+                return joinResponse;
+            }
+
+            String connectStr = raftCommand.getConnectStr();
+            //  check if exists
+            boolean exists = this.config.containsPeer(connectStr);
+            if (exists) { // has contains ?
+
+                joinResponse.setSuccess(true);
+                return joinResponse;
+            }
+
+
+            List<RaftPeer> peers = this.config.getOldPeers().explode();
+            StringBuilder builder = new StringBuilder(connectStr);
+            for (RaftPeer peer : peers) {
+
+                builder.append(",").append(peer.getId());
+
+            }
+
+            String content = RaftConstant.join + " " + builder.toString();
+
+            RaftPeerCluster peerCluster = new RaftPeerCluster();
+
+            for (RaftPeer peer : peers) {
+                peerCluster.getPeers().put(peer.getId(), peer);
+            }
+
+            RaftPeer p = new RpcRaftPeer(connectStr);
+            p.registerRaftTransportClient();
+            peerCluster.getPeers().put(connectStr, p);
+            // append log
+
+            long lastIndex = this.logService.getLastIndex();
+            lastIndex = lastIndex + 1;
+            byte[] body = content.getBytes();
+            RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, new LogApplyListener() {
+                @Override
+                public void notify(long commitIndex, RaftLog raftLog) {
+                    log.info(String.format("%s apply notify config...", getId()));
+                }
+            });
+            // 追加到本地
+            this.logService.appendRaftLog(raftLog);
+            this.config.changeTo(peerCluster);
+
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+        return joinResponse;
+    }
+
+
     /**
      * raft 命令处理
      *
@@ -300,7 +371,6 @@ public class RaftEngine {
      */
     private void leaveCommandHandler(RaftCommand command, LogApplyListener applyListener) {
         String connectStr = command.getConnectStr();
-
         //  check if exists
         boolean exists = this.config.containsPeer(connectStr);
         if (!exists) {
@@ -937,19 +1007,6 @@ public class RaftEngine {
         return RaftConstant.electionTimeoutMs + random.nextInt(RaftConstant.electionTimeoutMs);
     }
 
-
-    /***
-     * 开始发送心跳
-     */
-    private void startHeartbeat() {
-
-        if (this.isOnlySelf()) {
-            return;
-        }
-        log.debug(String.format(">>>>>>>>>>>%s send heartbeat ...<<<<<<<<<<<", getId()));
-        this.appendLogEntry("heartbeat".getBytes(), null);
-    }
-
     /**
      * @notice 此方法只有在 peer 节点状态为 leader时候才能调用
      * 初始化 peer next index 集合
@@ -967,29 +1024,6 @@ public class RaftEngine {
     private int getBroadcastInterval() {
 
         return RaftConstant.electionTimeoutMs / 10;
-    }
-
-    /**
-     * 加入集群
-     *
-     * @param raftCommand
-     * @return
-     */
-    public JoinResponse joinCluster(RaftCommand raftCommand) {
-
-        this.lock.writeLock().lock();
-        JoinResponse joinResponse = new JoinResponse();
-        try {
-
-            if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
-                joinResponse.setReason("the raft config is cOld,New state reject the operation!");
-                return joinResponse;
-            }
-
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-        return null;
     }
 
 
