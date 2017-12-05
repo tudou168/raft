@@ -189,6 +189,7 @@ public class RpcRaftPeer implements RaftPeer {
                     .serviceInterface(RaftService.class)
                     .requestTimeout(6000)
                     .transportClientProxy(new JdkTransportClientProxy()).builder();
+            this.transportClient = nettyClientBuilder.getTransportClient();
         }
 
 
