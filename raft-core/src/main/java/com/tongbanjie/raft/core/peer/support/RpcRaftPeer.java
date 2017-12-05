@@ -8,10 +8,7 @@ import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.peer.support.server.impl.RaftClientServiceImpl;
 import com.tongbanjie.raft.core.peer.support.server.RaftService;
 import com.tongbanjie.raft.core.peer.support.server.impl.RaftServiceImpl;
-import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
-import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
-import com.tongbanjie.raft.core.protocol.ElectionRequest;
-import com.tongbanjie.raft.core.protocol.ElectionResponse;
+import com.tongbanjie.raft.core.protocol.*;
 import com.tongbanjie.raft.core.transport.TransportClient;
 import com.tongbanjie.raft.core.transport.TransportServer;
 import com.tongbanjie.raft.core.transport.builder.NettyClientBuilder;
@@ -225,6 +222,22 @@ public class RpcRaftPeer implements RaftPeer {
 
             }
         }
+    }
+
+    /**
+     * join the raft cluster
+     *
+     * @param raftCommand
+     * @return
+     */
+    @Override
+    public JoinResponse joinCluster(RaftCommand raftCommand) {
+
+        //1.    check has leader
+        //2.    not leader
+        //3.    leader
+        //  TODO
+        return this.raftEngine.joinCluster(raftCommand);
     }
 
 

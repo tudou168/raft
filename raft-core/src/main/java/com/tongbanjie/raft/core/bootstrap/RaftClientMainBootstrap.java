@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.bootstrap;
 
+import com.tongbanjie.raft.core.client.RaftClient;
 import com.tongbanjie.raft.core.client.RaftClientBuilder;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.transport.TransportClient;
@@ -22,8 +23,7 @@ public class RaftClientMainBootstrap {
 
     private MyCommandOptions commandOptions = new MyCommandOptions();
 
-    private RaftClientService raftClientService;
-    private TransportClient transportClient;
+    private RaftClient raftClient;
 
 
     static {
@@ -49,8 +49,8 @@ public class RaftClientMainBootstrap {
         String host = split[0];
         Integer port = Integer.valueOf(split[1]);
         RaftClientBuilder<RaftClientService> builder = new RaftClientBuilder<RaftClientService>();
-        this.raftClientService = builder.host(host).port(port).serviceInterface(RaftClientService.class).builder();
-        this.transportClient = builder.getTransportClient();
+        RaftClientService raftClientService = builder.host(host).port(port).serviceInterface(RaftClientService.class).builder();
+        this.raftClient = new RaftClient(raftClientService, builder.getTransportClient());
         System.out.println("Connecting to " + server + " success!");
 
 
@@ -121,15 +121,17 @@ public class RaftClientMainBootstrap {
 
         if (cmd.equals("quit")) {
             System.out.println("Quitting...");
-            this.transportClient.close();
+            this.raftClient.close();
             System.exit(1);
         }
 
 
-        if (cmd.equals("raft:join")) {
+        if (cmd.equals("raft:join") && args.length >= 2) {
             System.out.println("Join...");
+            this.raftClient.joinCluster(args[1]);
             System.exit(1);
-        } else if (cmd.equals("raft:leave")) {
+        } else if (cmd.equals("raft:leave") && args.length >= 2) {
+            this.raftClient.joinCluster(args[1]);
             System.out.println("Leave...");
             System.exit(1);
         } else if (cmd.equals("close")) {

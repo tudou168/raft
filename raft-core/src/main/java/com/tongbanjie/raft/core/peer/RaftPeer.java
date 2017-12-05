@@ -4,10 +4,7 @@ package com.tongbanjie.raft.core.peer;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
-import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
-import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
-import com.tongbanjie.raft.core.protocol.ElectionRequest;
-import com.tongbanjie.raft.core.protocol.ElectionResponse;
+import com.tongbanjie.raft.core.protocol.*;
 
 /***
  *
@@ -73,5 +70,11 @@ public interface RaftPeer {
 
     void unregisterRaftTransportClient();
 
-
+    /**
+     * 加入集群
+     *
+     * @param raftCommand
+     * @return
+     */
+    JoinResponse joinCluster(RaftCommand raftCommand);
 }

@@ -969,6 +969,29 @@ public class RaftEngine {
         return RaftConstant.electionTimeoutMs / 10;
     }
 
+    /**
+     * 加入集群
+     *
+     * @param raftCommand
+     * @return
+     */
+    public JoinResponse joinCluster(RaftCommand raftCommand) {
+
+        this.lock.writeLock().lock();
+        JoinResponse joinResponse = new JoinResponse();
+        try {
+
+            if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
+                joinResponse.setReason("the raft config is cOld,New state reject the operation!");
+                return joinResponse;
+            }
+
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+        return null;
+    }
+
 
     /*****************************************选举处理部分****************************************************************/
     /**
