@@ -121,8 +121,12 @@ public class RaftClientMainBootstrap {
 
         if (cmd.equals("quit")) {
             System.out.println("Quitting...");
+            this.transportClient.close();
             System.exit(1);
-        } else if (cmd.equals("raft:join")) {
+        }
+
+
+        if (cmd.equals("raft:join")) {
             System.out.println("Join...");
             System.exit(1);
         } else if (cmd.equals("raft:leave")) {

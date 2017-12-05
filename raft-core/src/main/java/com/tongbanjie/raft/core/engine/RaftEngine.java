@@ -640,6 +640,13 @@ public class RaftEngine {
                 stepDown = true;
             }
 
+            if (requestTerm == this.term && !StringUtils.equals(this.leader, leaderId)) {
+                this.term = requestTerm;
+                this.leader = leaderId;
+                this.voteFor = noVoteFor;
+                stepDown = true;
+
+            }
 
             // check i am waiting for the vote response
             if (StringUtils.equals(RaftConstant.candidate, this.state) && StringUtils.equals(this.leader, leaderId) && requestTerm > this.term) {
