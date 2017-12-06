@@ -143,7 +143,6 @@ public class RpcRaftPeer implements RaftPeer {
     }
 
 
-
     /**
      * 注册 raft client 服务
      *
@@ -230,6 +229,17 @@ public class RpcRaftPeer implements RaftPeer {
     public JoinResponse joinCluster(RaftCommand raftCommand) {
 
         return this.raftEngine.joinCluster(raftCommand);
+    }
+
+    /**
+     * 脱离 raft 集群
+     *
+     * @param raftCommand
+     * @return
+     */
+    @Override
+    public LeaveResponse leaveCluster(RaftCommand raftCommand) {
+        return this.raftEngine.leaveCluster(raftCommand);
     }
 
 

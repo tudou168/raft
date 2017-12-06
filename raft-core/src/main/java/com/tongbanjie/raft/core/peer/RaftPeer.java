@@ -69,4 +69,10 @@ public interface RaftPeer {
      * @return
      */
     JoinResponse joinCluster(RaftCommand raftCommand);
+
+    /**
+     * @param raftCommand
+     * @return
+     */
+    LeaveResponse leaveCluster(RaftCommand raftCommand);
 }

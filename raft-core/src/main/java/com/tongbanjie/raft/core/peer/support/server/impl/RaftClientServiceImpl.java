@@ -6,6 +6,7 @@ import com.tongbanjie.raft.core.enums.RaftCommandType;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.protocol.JoinResponse;
+import com.tongbanjie.raft.core.protocol.LeaveResponse;
 import org.apache.commons.lang.StringUtils;
 
 /***
@@ -50,6 +51,34 @@ public class RaftClientServiceImpl implements RaftClientService {
 //        joinResponse.setReason("操作失败");
         return joinResponse;
 
+
+    }
+
+    @Override
+    public LeaveResponse leaveCluster(String server) {
+        String peerId = raftPeer.getId();
+        String leader = this.raftPeer.getRaftEngine().getLeader();
+
+        RaftCommand raftCommand = new RaftCommand();
+        raftCommand.setName("Leave");
+        raftCommand.setType(RaftCommandType.LEAVE.getValue());
+        raftCommand.setConnectStr(server);
+        LeaveResponse leaveResponse = new LeaveResponse();
+
+        //  eq leader ?
+        if (StringUtils.equals(peerId, leader)) {
+
+            return this.raftPeer.leaveCluster(raftCommand);
+
+        } else if (StringUtils.equals(leader, RaftConstant.noLeader)) {
+            // not found leader ?
+            leaveResponse.setReason("has not leader error!");
+        } else {
+            leaveResponse.setReason(server + " is not leader node error");
+        }
+
+//        joinResponse.setReason("操作失败");
+        return leaveResponse;
 
     }
 }

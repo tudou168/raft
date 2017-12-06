@@ -2,6 +2,7 @@ package com.tongbanjie.raft.core.client;
 
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.protocol.JoinResponse;
+import com.tongbanjie.raft.core.protocol.LeaveResponse;
 import com.tongbanjie.raft.core.transport.TransportClient;
 
 /***
@@ -48,7 +49,7 @@ public class RaftClient {
      *
      * @param server ip:port
      */
-    public void leaveCluster(String server) {
-
+    public LeaveResponse leaveCluster(String server) {
+        return this.raftClientService.leaveCluster(server);
     }
 }

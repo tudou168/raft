@@ -30,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -89,6 +90,8 @@ public class RaftEngine {
 
     //  并发锁
     private ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    private Condition configCondition = lock.writeLock().newCondition();
 
     private SecureRandom random = new SecureRandom();
 
@@ -219,7 +222,7 @@ public class RaftEngine {
 
             if (!StringUtils.equals(RaftConstant.leader, this.state)) {
                 log.warn(String.format("%s is not leader !", getId()));
-                joinResponse.setReason("the request node state is not a leader !");
+                joinResponse.setReason("the request node state is not a leader state !");
                 return joinResponse;
             }
             String connectStr = raftCommand.getConnectStr();
@@ -275,6 +278,88 @@ public class RaftEngine {
         return joinResponse;
     }
 
+
+    public LeaveResponse leaveCluster(RaftCommand raftCommand) {
+
+        this.lock.writeLock().lock();
+        LeaveResponse leaveResponse = new LeaveResponse();
+        try {
+            // check changing the peer config
+            if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
+                leaveResponse.setReason("the raft config is cOld,New state reject the operation!");
+                return leaveResponse;
+            }
+
+            //  check the raft peer is leader
+            if (!StringUtils.equals(RaftConstant.leader, this.state)) {
+                log.warn(String.format("%s is not leader !", getId()));
+                leaveResponse.setReason("the request node state is not a leader  state !");
+                return leaveResponse;
+            }
+
+            String connectStr = raftCommand.getConnectStr();
+            //  check if exists
+            boolean exists = this.config.containsPeer(connectStr);
+            if (!exists) { // has not contains ?
+
+                leaveResponse.setSuccess(true);
+                return leaveResponse;
+            }
+
+
+            List<RaftPeer> peers = this.config.getOldPeers().explode();
+            StringBuilder builder = new StringBuilder();
+            for (RaftPeer peer : peers) {
+
+                if (StringUtils.equals(peer.getId(), connectStr)) {
+                    continue;
+                } else {
+                    builder.append(peer.getId()).append(",");
+                }
+
+
+            }
+            String content = builder.toString();
+            if (content.endsWith(",")) {
+                content = content.substring(0, content.length() - 2);
+            }
+
+            log.info(">>>>>>>>>content=" + content + "<<<<<<<<<<<<<<<");
+
+            RaftPeerCluster peerCluster = new RaftPeerCluster();
+
+            for (RaftPeer peer : peers) {
+
+                if (StringUtils.equals(peer.getId(), connectStr)) {
+                    continue;
+                }
+
+                peerCluster.getPeers().put(peer.getId(), peer);
+            }
+
+            long lastIndex = this.logService.getLastIndex();
+            lastIndex = lastIndex + 1;
+            final byte[] body = content.getBytes();
+            RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, new LogApplyListener() {
+                @Override
+                public void notify(long commitIndex, RaftLog raftLog) {
+                    log.info(String.format("%s apply notify config...", getId()));
+                    // TODO send again a cNew log to other
+                    appendCNewLog(body);
+                }
+            });
+            // 追加到本地
+            this.logService.appendRaftLog(raftLog);
+            this.config.changeTo(peerCluster);
+
+
+        } finally {
+
+            this.lock.writeLock().unlock();
+        }
+        return leaveResponse;
+    }
+
     /**
      * append cnew log
      *
@@ -291,6 +376,13 @@ public class RaftEngine {
                 @Override
                 public void notify(long commitIndex, RaftLog raftLog) {
                     log.info(String.format("%s apply notify  cNew config...", getId()));
+
+                    RaftPeer peer = config.getAllPeers().get(getId());
+                    if (null == peer) {  //leave self
+                        log.warn(String.format("%s self leave the raft cluster ", getId()));
+                        //  leader become follower
+                        becomeFollower();
+                    }
 
                 }
             });
