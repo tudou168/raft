@@ -212,6 +212,9 @@ public class RaftEngine {
 
         this.lock.writeLock().lock();
         JoinResponse joinResponse = new JoinResponse();
+        long lastCommittedIndex = this.logService.getLastCommittedIndex();
+        long lastIndex = this.logService.getLastIndex();
+        lastIndex = lastIndex + 1;
         try {
 
             if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
@@ -255,9 +258,6 @@ public class RaftEngine {
             p.registerRaftTransportClient();
             peerCluster.getPeers().put(connectStr, p);
             // append log
-
-            long lastIndex = this.logService.getLastIndex();
-            lastIndex = lastIndex + 1;
             final byte[] body = content.getBytes();
             RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, new LogApplyListener() {
                 @Override
@@ -272,8 +272,28 @@ public class RaftEngine {
             this.logService.appendRaftLog(raftLog);
             this.config.changeTo(peerCluster);
 
+
+            long startTime = System.currentTimeMillis();
+            while (lastCommittedIndex < lastIndex) {
+                if (System.currentTimeMillis() - startTime >= 3000) {
+                    break;
+                }
+                configCondition.await(3000, TimeUnit.MILLISECONDS);
+            }
+        } catch (InterruptedException e) {
+            log.error(String.format("%s  join >>>>>>error:%s", getId(), e.getMessage()), e);
         } finally {
             this.lock.writeLock().unlock();
+        }
+
+        lastCommittedIndex = this.logService.getLastCommittedIndex();
+        if (lastCommittedIndex >= lastIndex) {
+            joinResponse.setSuccess(true);
+            joinResponse.setReason("join success!");
+        } else {
+            joinResponse.setSuccess(false);
+            joinResponse.setReason("join fail!");
+
         }
         return joinResponse;
     }
@@ -283,6 +303,9 @@ public class RaftEngine {
 
         this.lock.writeLock().lock();
         LeaveResponse leaveResponse = new LeaveResponse();
+        long lastCommittedIndex = this.logService.getLastCommittedIndex();
+        long lastIndex = this.logService.getLastIndex();
+        lastIndex = lastIndex + 1;
         try {
             // check changing the peer config
             if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
@@ -336,15 +359,12 @@ public class RaftEngine {
 
                 peerCluster.getPeers().put(peer.getId(), peer);
             }
-
-            long lastIndex = this.logService.getLastIndex();
-            lastIndex = lastIndex + 1;
             final byte[] body = content.getBytes();
             RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, new LogApplyListener() {
                 @Override
                 public void notify(long commitIndex, RaftLog raftLog) {
                     log.info(String.format("%s apply notify config...", getId()));
-                    // TODO send again a cNew log to other
+                    // send again a cNew log to other
                     appendCNewLog(body);
                 }
             });
@@ -352,10 +372,28 @@ public class RaftEngine {
             this.logService.appendRaftLog(raftLog);
             this.config.changeTo(peerCluster);
 
+            long startTime = System.currentTimeMillis();
+            while (lastCommittedIndex < lastIndex) {
+                if (System.currentTimeMillis() - startTime >= 3000) {
+                    break;
+                }
+                configCondition.await(3000, TimeUnit.MILLISECONDS);
+            }
 
+        } catch (InterruptedException e) {
+            log.error(String.format("%s  leave >>>>>>error:%s", getId(), e.getMessage()), e);
         } finally {
 
             this.lock.writeLock().unlock();
+        }
+        lastCommittedIndex = this.logService.getLastCommittedIndex();
+        if (lastCommittedIndex >= lastIndex) {
+            leaveResponse.setSuccess(true);
+            leaveResponse.setReason("leave success!");
+        } else {
+            leaveResponse.setSuccess(false);
+            leaveResponse.setReason("leave fail!");
+
         }
         return leaveResponse;
     }
@@ -383,6 +421,8 @@ public class RaftEngine {
                         //  leader become follower
                         becomeFollower();
                     }
+                    //  signal to the await
+                    configCondition.signalAll();
 
                 }
             });
@@ -733,34 +773,12 @@ public class RaftEngine {
 
                     if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() && raftLog.getContent() != null && raftLog.getContent().length > 0) {
                         String content = new String(raftLog.getContent());
-                        //  TODO
                         log.info(String.format(">>>>>>>>>>%s start change the peer cluster config:%s <<<<<<<<<<<<<<<", getId(), content));
                         this.processConfigColdNewLog(content);
 
                     }
 
                 }
-
-
-//                else {
-//
-//
-//                    if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() && raftLog.getContent() != null && raftLog.getContent().length > 0) {
-//
-//                        String content = new String(raftLog.getContent());
-//
-//                        if (content.startsWith(RaftConstant.join)) {
-//
-//                            this.processJoin(raftLog);
-//
-//                        } else if (content.startsWith(RaftConstant.leave)) {
-//                            this.processLeave(raftLog);
-//                        }
-//
-//
-//                    }
-//                    //  ignore
-//                }
             }
 
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
