@@ -344,7 +344,7 @@ public class RaftEngine {
             }
             String content = builder.toString();
             if (content.endsWith(",")) {
-                content = content.substring(0, content.length() - 2);
+                content = content.substring(0, content.length() - 1);
             }
 
             log.info(">>>>>>>>>content=" + content + "<<<<<<<<<<<<<<<");
