@@ -356,6 +356,12 @@ public class RaftEngine {
                 return;
             }
 
+            //  the cluster is no me
+            if (this.config.getAllPeers().get(getId()) == null) {
+
+                return;
+            }
+
             log.info(String.format("%s become candidate...", getId()));
             this.votes.clear();
             this.state = RaftConstant.candidate;
@@ -669,7 +675,7 @@ public class RaftEngine {
 
             if (commitIndex > 0 && commitIndex > lastCommittedIndex) {
                 // commit the log
-                this.logService.commitToIndex(commitIndex);
+                this.logService.commitToIndex(commitIndex, false);
                 log.info(String.format("%s raft log  committed to %s index", getId(), commitIndex));
             }
 
@@ -726,7 +732,7 @@ public class RaftEngine {
             long lastIndex = this.logService.getLastIndex();
             if (lastIndex > 0) {
                 log.info(String.format("%s commit to %s", getId(), lastIndex));
-                this.logService.commitToIndex(lastIndex);
+                this.logService.commitToIndex(lastIndex, true);
                 log.info(String.format("%s commit to %s,commitIndex %s", getId(), lastIndex, this.logService.getLastCommittedIndex()));
 
             }
@@ -1046,7 +1052,7 @@ public class RaftEngine {
             log.debug("***********lastCommittedIndex=" + lastCommittedIndex);
             if (newCommitIndex > lastCommittedIndex) {
                 log.debug(String.format("*************%s start raft log commit  with the %s index in %s term  **************", getId(), newCommitIndex, term));
-                logService.commitToIndex(newCommitIndex);
+                logService.commitToIndex(newCommitIndex, true);
                 commitIndex = newCommitIndex;
 
             }

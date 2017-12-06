@@ -33,7 +33,7 @@ public class RaftClientMainBootstrapTest {
 
         this.raftClient = new RaftClient(raftClientService, nettyClientBuilder.getTransportClient());
         System.out.println("Connecting to " + server + " success!");
-        JoinResponse joinResponse = raftClient.joinCluster("192.168.124.40:6003");
+        JoinResponse joinResponse = raftClient.joinCluster("192.168.124.40:6004");
         System.out.println(joinResponse.getReason());
         System.out.println(joinResponse.isSuccess());
     }

@@ -337,8 +337,20 @@ public class DefaultRaftLogService implements RaftLogService {
             if (truncateFrom >= this.raftLogs.size()) {
                 return true;
             }
-            this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);
 
+
+            // abort the peer config
+
+            for (int a = truncateFrom; a < this.raftLogs.size(); a++) {
+                RaftLog raftLog = this.raftLogs.get(a);
+                if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() || raftLog.getType() == RaftLogType.CONFIGURATION.getValue()) {
+                    this.config.changeAbort();
+                }
+
+            }
+
+
+            this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);
 
         } finally {
             this.lock.unlock();
@@ -354,7 +366,7 @@ public class DefaultRaftLogService implements RaftLogService {
      * @param commitIndex 提交到指定的日志 index
      * @return
      */
-    public boolean commitToIndex(long commitIndex) {
+    public boolean commitToIndex(long commitIndex, boolean isLeader) {
 
         this.lock.lock();
 
@@ -391,8 +403,11 @@ public class DefaultRaftLogService implements RaftLogService {
                 this.dataStorage.writeToStore(body);
 
                 // if configuration log
-                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION.getValue()) {
+                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION.getValue() && !isLeader) {
 
+                    this.config.commitConfigurationTo();
+                }
+                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION_NEW.getValue() && isLeader) {
                     this.config.commitConfigurationTo();
                 }
                 // apply  listener notify

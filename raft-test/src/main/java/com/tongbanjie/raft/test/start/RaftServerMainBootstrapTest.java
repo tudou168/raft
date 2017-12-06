@@ -14,7 +14,7 @@ public class RaftServerMainBootstrapTest {
 
 
     public static void main(String[] args) {
-        args = new String[]{"192.168.124.40:6001", "192.168.124.40:6001,192.168.124.40:6002,192.168.124.40:6003", "./log", ".raft", "7001"};
+        args = new String[]{"192.168.124.40:6004", "192.168.124.40:6004", "./log", ".raft", "7004"};
         if (args == null || args.length < 4) {
             System.err.println("args has no enough!");
             System.exit(1);
