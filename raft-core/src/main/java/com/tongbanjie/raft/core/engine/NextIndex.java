@@ -129,6 +129,17 @@ public class NextIndex {
 
     }
 
+    public Map<String, Long> getData() {
+
+        this.readWriteLock.readLock();
+
+        try {
+            return data;
+        } finally {
+            this.readWriteLock.readLock();
+        }
+
+    }
 }
 
 

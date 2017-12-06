@@ -142,10 +142,6 @@ public class RpcRaftPeer implements RaftPeer {
         return this.raftEngine.appendEntriesHandler(request);
     }
 
-    public void commandHandler(RaftCommand command, LogApplyListener applyListener) {
-
-        this.raftEngine.commandHandler(command, applyListener);
-    }
 
 
     /**

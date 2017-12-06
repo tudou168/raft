@@ -54,16 +54,6 @@ public interface RaftPeer {
      */
     AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest appendEntriesRequest);
 
-
-    /**
-     * 执行命令
-     *
-     * @param command
-     * @param applyListener
-     */
-    void commandHandler(RaftCommand command, LogApplyListener applyListener);
-
-
     void registerRaftClientTransportServer(String host, Integer clientPort);
 
     void registerRaftTransportClient();

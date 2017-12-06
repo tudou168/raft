@@ -209,7 +209,7 @@ public class RaftConfiguration {
     public void commitConfigurationTo() {
 
         this.lock.writeLock().lock();
-
+        log.info(">>>>>>>>>>>>>>> start commit peer config<<<<<<<<<<<<<<");
         try {
 
             if (!StringUtils.equals(this.state, RaftConfigurationState.CNEW.getName())) {
@@ -223,17 +223,17 @@ public class RaftConfiguration {
             }
 
             //  destroy all  old Peers client
-            for (RaftPeer peer : oldPeers.explode()) {
-
-                try {
-
-                    peer.unregisterRaftTransportClient();
-
-                } catch (Exception e) {
-                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
-
-                }
-            }
+//            for (RaftPeer peer : oldPeers.explode()) {
+//
+//                try {
+//
+//                    peer.unregisterRaftTransportClient();
+//
+//                } catch (Exception e) {
+//                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
+//
+//                }
+//            }
 
             this.oldPeers = this.newPeers;
             this.state = RaftConfigurationState.COLD.getName();
@@ -261,17 +261,17 @@ public class RaftConfiguration {
 
 
             //  destroy all  new peers client
-            for (RaftPeer peer : newPeers.explode()) {
-
-                try {
-
-                    peer.unregisterRaftTransportClient();
-
-                } catch (Exception e) {
-                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
-
-                }
-            }
+//            for (RaftPeer peer : newPeers.explode()) {
+//
+//                try {
+//
+//                    peer.unregisterRaftTransportClient();
+//
+//                } catch (Exception e) {
+//                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
+//
+//                }
+//            }
 
             this.newPeers = new RaftPeerCluster();
             this.state = RaftConfigurationState.COLD.getName();

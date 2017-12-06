@@ -86,7 +86,7 @@ public class RaftLog implements Serializable {
 
     public RaftLog createCopy() {
 
-        return new RaftLog(this.index, this.term, this.type, this.content, this.applyListener);
+        return new RaftLog(this.index, this.term, this.type, this.content, null);
     }
 
     @Override

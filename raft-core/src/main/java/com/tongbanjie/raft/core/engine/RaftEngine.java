@@ -186,6 +186,7 @@ public class RaftEngine {
                     changeListener.notify(cluster.explode());
                 }
             });
+
             // append local configuration
             this.logService.appendRaftLog(raftLog);
             //  first append local configuration
@@ -215,6 +216,12 @@ public class RaftEngine {
                 return joinResponse;
             }
 
+
+            if (!StringUtils.equals(RaftConstant.leader, this.state)) {
+                log.warn(String.format("%s is not leader !", getId()));
+                joinResponse.setReason("the request node state is not a leader !");
+                return joinResponse;
+            }
             String connectStr = raftCommand.getConnectStr();
             //  check if exists
             boolean exists = this.config.containsPeer(connectStr);
@@ -233,7 +240,7 @@ public class RaftEngine {
 
             }
 
-            String content = RaftConstant.join + " " + builder.toString();
+            String content = builder.toString();
 
             RaftPeerCluster peerCluster = new RaftPeerCluster();
 
@@ -248,17 +255,19 @@ public class RaftEngine {
 
             long lastIndex = this.logService.getLastIndex();
             lastIndex = lastIndex + 1;
-            byte[] body = content.getBytes();
+            final byte[] body = content.getBytes();
             RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, new LogApplyListener() {
                 @Override
                 public void notify(long commitIndex, RaftLog raftLog) {
                     log.info(String.format("%s apply notify config...", getId()));
+                    // TODO send again a cNew log to other
+                    appendCNewLog(body);
                 }
             });
+            this.nextIndexList.getData().put(connectStr, lastIndex);
             // 追加到本地
             this.logService.appendRaftLog(raftLog);
             this.config.changeTo(peerCluster);
-
 
         } finally {
             this.lock.writeLock().unlock();
@@ -266,159 +275,32 @@ public class RaftEngine {
         return joinResponse;
     }
 
-
     /**
-     * raft 命令处理
+     * append cnew log
      *
-     * @param command
-     * @param changeListener
+     * @param body
      */
-    public void commandHandler(RaftCommand command, LogApplyListener changeListener) {
+    private void appendCNewLog(final byte[] body) {
 
-        this.lock.writeLock().lock();
+        this.lock.writeLock();
 
         try {
+            long lastIndex = this.logService.getLastIndex();
+            lastIndex = lastIndex + 1;
+            RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION_NEW.getValue(), body, new LogApplyListener() {
+                @Override
+                public void notify(long commitIndex, RaftLog raftLog) {
+                    log.info(String.format("%s apply notify  cNew config...", getId()));
 
+                }
+            });
 
-            if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
-
-                log.warn("the raft configuration state is " + RaftConfigurationState.CNEW.getName());
-                return;
-            }
-
-            Integer commandType = command.getType();
-            if (RaftCommandType.LEAVE.getValue() == commandType) {
-
-
-                this.leaveCommandHandler(command, changeListener);
-
-
-            } else if (RaftCommandType.JOIN.getValue() == commandType) {
-
-                this.joinCommandHandler(command, changeListener);
-            }
+            this.logService.appendRaftLog(raftLog);
 
 
         } finally {
             this.lock.writeLock().unlock();
         }
-
-    }
-
-    /**
-     * 加入集群命令处理
-     *
-     * @param command       命令
-     * @param applyListener 配置改变监听
-     */
-    private void joinCommandHandler(RaftCommand command, LogApplyListener applyListener) {
-
-        String connectStr = command.getConnectStr();
-        boolean exists = this.config.containsPeer(connectStr);
-
-        // check repeat join
-        if (exists) {
-
-            applyListener.notify(this.logService.getLastCommittedIndex(), null);
-            return;
-        }
-
-        //
-        RaftPeer raftPeer = new RpcRaftPeer(connectStr);
-        // register the remoting client
-        raftPeer.registerRaftTransportClient();
-
-        long lastIndex = this.logService.getLastIndex();
-        lastIndex = lastIndex + 1;
-
-        List<RaftPeer> peers = this.config.getOldPeers().explode();
-
-        StringBuilder builder = new StringBuilder(connectStr);
-        for (RaftPeer peer : peers) {
-
-            builder.append(",").append(peer.getId());
-
-        }
-
-        String content = RaftConstant.join + " " + builder.toString();
-
-        byte[] body = content.getBytes();
-        RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, applyListener);
-        // 追加到本地
-        this.logService.appendRaftLog(raftLog);
-
-        RaftPeerCluster cluster = new RaftPeerCluster();
-        Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
-        for (RaftPeer peer : peers) {
-
-            RaftPeer p = new RpcRaftPeer(peer.getId());
-            // register the remoting client
-            p.registerRaftTransportClient();
-            raftPeerMap.put(p.getId(), p);
-        }
-
-        raftPeerMap.put(raftPeer.getId(), raftPeer);
-        cluster.setPeers(raftPeerMap);
-        this.config.changeTo(cluster);
-    }
-
-
-    /**
-     * 脱离集群处理
-     *
-     * @param command       命令
-     * @param applyListener 配置改变监听
-     */
-    private void leaveCommandHandler(RaftCommand command, LogApplyListener applyListener) {
-        String connectStr = command.getConnectStr();
-        //  check if exists
-        boolean exists = this.config.containsPeer(connectStr);
-        if (!exists) {
-            log.warn(String.format("the raft %s not in the raft cluster!", connectStr));
-            return;
-        }
-        long lastIndex = this.logService.getLastIndex();
-
-        List<RaftPeer> peers = this.config.getOldPeers().explode();
-
-        StringBuilder builder = new StringBuilder();
-        for (RaftPeer peer : peers) {
-            if (StringUtils.equals(connectStr, peer.getId())) {
-                continue;
-            }
-            builder.append(peer.getId()).append(",");
-        }
-
-        String logContent = builder.toString();
-        if (logContent.endsWith(",")) {
-            logContent = logContent.substring(0, logContent.lastIndexOf(",") - 1);
-        }
-
-        String content = RaftConstant.leave + " " + logContent;
-
-
-        lastIndex = lastIndex + 1;
-        byte[] body = content.getBytes();
-
-        RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION.getValue(), body, applyListener);
-        // 追加到本地
-        this.logService.appendRaftLog(raftLog);
-
-        RaftPeerCluster cluster = new RaftPeerCluster();
-        Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
-        for (RaftPeer peer : this.config.getOldPeers().explode()) {
-
-            if (StringUtils.equals(peer.getId(), connectStr)) {
-                continue;
-            }
-            RaftPeer p = new RpcRaftPeer(peer.getId());
-            // register the remoting client
-            p.registerRaftTransportClient();
-            raftPeerMap.put(p.getId(), p);
-        }
-        cluster.setPeers(raftPeerMap);
-        this.config.changeTo(cluster);
-
     }
 
 
@@ -751,23 +633,36 @@ public class RaftEngine {
 
                 } else {
 
-
                     if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() && raftLog.getContent() != null && raftLog.getContent().length > 0) {
-
                         String content = new String(raftLog.getContent());
-
-                        if (content.startsWith(RaftConstant.join)) {
-
-                            this.processJoin(raftLog);
-
-                        } else if (content.startsWith(RaftConstant.leave)) {
-                            this.processLeave(raftLog);
-                        }
-
+                        //  TODO
+                        log.info(String.format(">>>>>>>>>>%s start change the peer cluster config:%s <<<<<<<<<<<<<<<", getId(), content));
+                        this.processConfigColdNewLog(content);
 
                     }
-                    //  ignore
+
                 }
+
+
+//                else {
+//
+//
+//                    if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() && raftLog.getContent() != null && raftLog.getContent().length > 0) {
+//
+//                        String content = new String(raftLog.getContent());
+//
+//                        if (content.startsWith(RaftConstant.join)) {
+//
+//                            this.processJoin(raftLog);
+//
+//                        } else if (content.startsWith(RaftConstant.leave)) {
+//                            this.processLeave(raftLog);
+//                        }
+//
+//
+//                    }
+//                    //  ignore
+//                }
             }
 
             long lastCommittedIndex = this.logService.getLastCommittedIndex();
@@ -792,87 +687,26 @@ public class RaftEngine {
         }
     }
 
+    private void processConfigColdNewLog(String content) {
 
-    private void processLeave(RaftLog raftLog) {
 
+        String[] servers = content.split(",");
 
-        String content = new String(raftLog.getContent());
-
-        String connectStr = content.replaceAll(RaftConstant.leave, "").replaceAll(" ", "");
-
-        String[] servers = connectStr.split(",");
-
-        boolean exists = false;
+        RaftPeerCluster peerCluster = new RaftPeerCluster();
         for (String server : servers) {
-            if (this.config.containsPeer(server)) {
-                exists = true;
-                break;
+
+            RaftPeer peer = this.config.get(server);
+            if (null != peer) {
+                peerCluster.getPeers().put(server, peer);
+            } else {
+
+                RaftPeer p = new RpcRaftPeer(server);
+                p.registerRaftTransportClient();
+                peerCluster.getPeers().put(server, p);
             }
-
         }
+        this.config.changeTo(peerCluster);
 
-
-        if (!exists) {
-            return;
-        }
-
-
-        if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
-            //  abort
-            this.config.changeAbort();
-        }
-
-        RaftPeerCluster cluster = new RaftPeerCluster();
-        Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
-        for (String server : servers) {
-            RaftPeer p = new RpcRaftPeer(server);
-            // register the remoting client
-            p.registerRaftTransportClient();
-            raftPeerMap.put(p.getId(), p);
-        }
-        cluster.setPeers(raftPeerMap);
-        this.config.changeTo(cluster);
-    }
-
-    /**
-     * @param raftLog
-     */
-    private void processJoin(RaftLog raftLog) {
-
-
-        String content = new String(raftLog.getContent());
-        String connectStr = content.replaceAll(RaftConstant.join, "").replaceAll(" ", "");
-
-        String[] servers = connectStr.split(",");
-
-        boolean exists = false;
-        for (String server : servers) {
-            if (this.config.containsPeer(server)) {
-                exists = true;
-                break;
-            }
-
-        }
-
-
-        if (exists) {
-            return;
-        }
-        if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
-            //  abort
-            this.config.changeAbort();
-        }
-
-        RaftPeerCluster cluster = new RaftPeerCluster();
-        Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
-        for (String server : servers) {
-            RaftPeer p = new RpcRaftPeer(server);
-            // register the remoting client
-            p.registerRaftTransportClient();
-            raftPeerMap.put(p.getId(), p);
-        }
-        cluster.setPeers(raftPeerMap);
-        this.config.changeTo(cluster);
     }
 
     /**
