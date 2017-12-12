@@ -3,7 +3,6 @@ package com.tongbanjie.raft.core.bootstrap;
 import com.tongbanjie.raft.core.client.RaftClient;
 import com.tongbanjie.raft.core.client.RaftClientBuilder;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
-import com.tongbanjie.raft.core.transport.TransportClient;
 import com.tongbanjie.raft.core.util.NetUtil;
 import jline.console.ConsoleReader;
 

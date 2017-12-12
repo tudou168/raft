@@ -1,5 +1,6 @@
 package com.tongbanjie.raft.core.peer.support.server.impl;
 
+import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.server.RaftService;
 import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
@@ -14,25 +15,31 @@ import com.tongbanjie.raft.core.protocol.ElectionResponse;
  */
 public class RaftServiceImpl implements RaftService {
 
-    private RaftPeer raftPeer;
+    private RaftEngine raftEngine;
 
-    public RaftServiceImpl(RaftPeer raftPeer) {
-        this.raftPeer = raftPeer;
+    public RaftServiceImpl(RaftEngine raftEngine) {
+        this.raftEngine = raftEngine;
     }
 
     /**
-     * 投票选举
+     *  发起投票请求投票选举
+     * @param request
+     * @return
+     */
+    public ElectionResponse electionVote(ElectionRequest request) {
+        return raftEngine.electionVoteHandler(request);
+    }
+
+    /**
+     * 发起追加日志请求
      *
      * @param request
      * @return
      */
-    @Override
-    public ElectionResponse electionVote(ElectionRequest request) {
-        return raftPeer.electionVoteHandler(request);
+    public AppendEntriesResponse appendEntries(AppendEntriesRequest request) {
+
+        return raftEngine.appendEntriesHandler(request);
     }
 
-    @Override
-    public AppendEntriesResponse appendEntries(AppendEntriesRequest request) {
-        return raftPeer.appendEntriesHandler(request);
-    }
+
 }

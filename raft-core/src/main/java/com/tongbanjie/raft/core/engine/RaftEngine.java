@@ -1,31 +1,30 @@
 package com.tongbanjie.raft.core.engine;
 
-import com.alibaba.fastjson.JSON;
-import com.tongbanjie.raft.core.builder.RaftPeerBuilder;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.config.RaftConfiguration;
 import com.tongbanjie.raft.core.constant.RaftConstant;
-import com.tongbanjie.raft.core.election.RaftElectionService;
-import com.tongbanjie.raft.core.election.handler.ElectionResponseHandler;
-import com.tongbanjie.raft.core.election.support.DefaultRaftElectionService;
-import com.tongbanjie.raft.core.enums.RaftCommandType;
+import com.tongbanjie.raft.core.engine.handler.ElectionResponseHandler;
+import com.tongbanjie.raft.core.engine.handler.ReplicationLogResponseHandler;
 import com.tongbanjie.raft.core.enums.RaftConfigurationState;
 import com.tongbanjie.raft.core.enums.RaftLogType;
 import com.tongbanjie.raft.core.exception.RaftException;
-import com.tongbanjie.raft.core.listener.ConfigurationChangeListener;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
+import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
 import com.tongbanjie.raft.core.log.manage.RaftLogService;
+import com.tongbanjie.raft.core.log.manage.support.DefaultRaftLogService;
+import com.tongbanjie.raft.core.log.storage.support.DefaultDataStorage;
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.RaftPeerCluster;
 import com.tongbanjie.raft.core.peer.support.RpcRaftPeer;
 import com.tongbanjie.raft.core.protocol.*;
-import com.tongbanjie.raft.core.replication.ReplicationService;
-import com.tongbanjie.raft.core.replication.handler.ReplicationLogResponseHandler;
-import com.tongbanjie.raft.core.replication.support.DefaultReplicationService;
+import com.tongbanjie.raft.core.snapshot.Snapshot;
+import com.tongbanjie.raft.core.snapshot.SnapshotMetaData;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
@@ -34,9 +33,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.tongbanjie.raft.core.constant.RaftConstant.follower;
-import static com.tongbanjie.raft.core.constant.RaftConstant.noLeader;
-import static com.tongbanjie.raft.core.constant.RaftConstant.noVoteFor;
+import static com.tongbanjie.raft.core.constant.RaftConstant.*;
 
 /***
  * raft 核心调度引擎
@@ -68,9 +65,7 @@ public class RaftEngine {
     //  raft 日志服务
     private RaftLogService logService;
 
-    private RaftElectionService electionService;
-
-    private ReplicationService replicationService;
+    private RaftCoreService raftCoreService;
 
     //  任务执行线程池
     private ExecutorService executorService;
@@ -108,23 +103,66 @@ public class RaftEngine {
 
     private ConcurrentHashMap<String, Long> matchIndexList = new ConcurrentHashMap<String, Long>();
 
+    private String raftDir;
 
-    public RaftEngine(String id, RaftLogService logService) {
-        this.id = id;
-        this.logService = logService;
-        this.electionService = new DefaultRaftElectionService();
-        this.replicationService = new DefaultReplicationService();
+    private Snapshot snapshot;
+
+    private int clientPort;
+
+
+    public RaftEngine(String localServer, String servers, String raftDir, int clientPort) {
+        this.id = localServer;
+        this.raftDir = raftDir + File.separator + localServer;
+        this.clientPort = clientPort;
+        this.snapshot = new Snapshot(this.raftDir);
+        this.logService = new DefaultRaftLogService(new DefaultDataStorage(this.raftDir, ".raft"), new Crc32RaftLogCodec());
+        this.raftCoreService = new RaftCoreService(this);
         this.config = new RaftConfiguration();
+        this.setConfiguration(servers);
         this.logService.setConfiguration(this.config);
         this.commitIndex = logService.getLastCommittedIndex();
+        // load the raft snapshot
+        this.loadSnapshot();
+
+
     }
 
+    private void loadSnapshot() {
 
-    public void setConfiguration(List<RaftPeer> peers, ConfigurationChangeListener changeListener) {
+        byte[] content = this.snapshot.getSnapshotMetaData().getContent();
+        if (content != null && content.length > 0) {
+            String servers = new String(content);
+            // set configuration
+            this.setConfiguration(servers);
 
-        if (peers == null || peers.isEmpty()) {
+        }
+    }
+
+    /**
+     * set configuration
+     *
+     * @param servers
+     */
+    private void setConfiguration(String servers) {
+
+        if (StringUtils.isBlank(servers)) {
+            throw new RaftException("servers is not allow null");
+        }
+
+        String[] split = servers.split(",");
+
+
+        List<RaftPeer> peers = new ArrayList<RaftPeer>();
+
+
+        for (String server : split) {
+            RaftPeer peer = new RpcRaftPeer(server);
+            peers.add(peer);
+        }
+        if (peers.isEmpty()) {
             throw new RaftException("peers is not allow null");
         }
+
 
         RaftPeerCluster cluster = new RaftPeerCluster();
         Map<String, RaftPeer> raftPeerMap = new HashMap<String, RaftPeer>();
@@ -134,73 +172,8 @@ public class RaftEngine {
             raftPeerMap.put(raftPeer.getId(), raftPeer);
         }
         cluster.setPeers(raftPeerMap);
-        //  是否正在运行
-        if (!this.running.get()) {
-            this.config.directSetPeers(cluster);
-            return;
-        }
-        // other
-        this.changeConfiguration(cluster, changeListener);
-
-
+        this.config.directSetPeers(cluster);
     }
-
-    /**
-     * set new configuration
-     *
-     * @param cluster
-     */
-    private void changeConfiguration(final RaftPeerCluster cluster, final ConfigurationChangeListener changeListener) {
-
-        this.lock.writeLock().lock();
-
-
-        try {
-
-            if (!StringUtils.equals(RaftConstant.leader, this.state)) {
-                log.warn(String.format("%s is not leader !", getId()));
-                return;
-            }
-
-            final List<String> peers = new ArrayList<String>();
-            for (RaftPeer peer : cluster.explode()) {
-                RaftPeer p = this.config.get(peer.getId());
-                if (p != null) {
-                    log.warn(String.format("the %s has already  in the configuration list", peer.getId()));
-                    continue;
-                }
-
-                peers.add(peer.getId());
-            }
-            //  if has no new peer
-            if (peers.isEmpty()) {
-                changeListener.notify(this.config.getAllPeers().explode());
-                return;
-            }
-
-            String peerStrs = JSON.toJSONString(peers);
-            long lastIndex = this.logService.getLastIndex();
-            lastIndex = lastIndex + 1;
-
-            byte[] content = peerStrs.getBytes();
-            RaftLog raftLog = new RaftLog(lastIndex, term, RaftLogType.CONFIGURATION.getValue(), content, new LogApplyListener() {
-
-                public void notify(long commitIndex, RaftLog raftLog) {
-                    changeListener.notify(cluster.explode());
-                }
-            });
-
-            // append local configuration
-            this.logService.appendRaftLog(raftLog);
-            //  first append local configuration
-            this.config.changeTo(cluster);
-
-        } finally {
-            this.lock.writeLock().unlock();
-        }
-
-    }
-
 
     /**
      * join the cluster
@@ -234,6 +207,7 @@ public class RaftEngine {
             if (exists) { // has contains ?
 
                 joinResponse.setSuccess(true);
+                joinResponse.setReason("join success");
                 return joinResponse;
             }
 
@@ -255,7 +229,6 @@ public class RaftEngine {
             }
 
             RaftPeer p = new RpcRaftPeer(connectStr);
-            p.registerRaftTransportClient();
             peerCluster.getPeers().put(connectStr, p);
             // append log
             final byte[] body = content.getBytes();
@@ -272,14 +245,7 @@ public class RaftEngine {
             this.logService.appendRaftLog(raftLog);
             this.config.changeTo(peerCluster);
 
-
-            long startTime = System.currentTimeMillis();
-            while (lastCommittedIndex < lastIndex) {
-                if (System.currentTimeMillis() - startTime >= 3000) {
-                    break;
-                }
-                configCondition.await(3000, TimeUnit.MILLISECONDS);
-            }
+            configCondition.await(30000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             log.error(String.format("%s  join >>>>>>error:%s", getId(), e.getMessage()), e);
         } finally {
@@ -326,6 +292,7 @@ public class RaftEngine {
             if (!exists) { // has not contains ?
 
                 leaveResponse.setSuccess(true);
+                leaveResponse.setReason("leave success");
                 return leaveResponse;
             }
 
@@ -372,14 +339,7 @@ public class RaftEngine {
             this.logService.appendRaftLog(raftLog);
             this.config.changeTo(peerCluster);
 
-            long startTime = System.currentTimeMillis();
-            while (lastCommittedIndex < lastIndex) {
-                if (System.currentTimeMillis() - startTime >= 3000) {
-                    break;
-                }
-                configCondition.await(3000, TimeUnit.MILLISECONDS);
-            }
-
+            configCondition.await(30000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             log.error(String.format("%s  leave >>>>>>error:%s", getId(), e.getMessage()), e);
         } finally {
@@ -413,7 +373,7 @@ public class RaftEngine {
             RaftLog raftLog = new RaftLog(lastIndex, this.term, RaftLogType.CONFIGURATION_NEW.getValue(), body, new LogApplyListener() {
                 @Override
                 public void notify(long commitIndex, RaftLog raftLog) {
-                    log.info(String.format("%s apply notify  cNew config...", getId()));
+                    log.info(String.format("%s apply notify CONFIGURATION_NEW  cNew config...", getId()));
 
                     RaftPeer peer = config.getAllPeers().get(getId());
                     if (null == peer) {  //leave self
@@ -454,14 +414,77 @@ public class RaftEngine {
     public void initEngine() {
 
         log.info(String.format("raft %s start init....", getId()));
+        this.raftCoreService.registerRaftClientService(this.clientPort);
         this.voteFor = RaftConstant.noLeader;
         this.state = RaftConstant.follower;
         this.term = this.logService.getLastTerm();
         this.executorService = new ThreadPoolExecutor(RaftConstant.raftThreadNum, RaftConstant.raftThreadNum, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         this.refreshScheduledExecutorService = Executors.newScheduledThreadPool(2);
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(2);
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(3);
         this.resetElectionTimeoutTimer();
+        this.scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                makeSnapshot();
+            }
+        }, 1000, 3000, TimeUnit.MILLISECONDS);
         log.info(String.format("raft %s start success...", getId()));
+
+    }
+
+    /**
+     * 创建快照
+     */
+    private void makeSnapshot() {
+
+        if (this.snapshot.getWorking().get()) {
+            log.warn(String.format("%s is snapshot working.....", getId()));
+            return;
+        }
+
+        this.snapshot.getWorking().compareAndSet(false, true);
+        this.lock.writeLock().lock();
+        String servers = null;
+        SnapshotMetaData snapshotMetaData = null;
+        try {
+
+            log.debug(String.format("%s start make snapshot ......", getId()));
+            snapshotMetaData = new SnapshotMetaData();
+            snapshotMetaData.setLastIncludedIndex(this.logService.getLastCommittedIndex());
+            snapshotMetaData.setLastIncludedTerm(this.logService.getLastTerm());
+
+            Set<String> peers = this.config.getOldPeers().getPeers().keySet();
+            StringBuilder builder = new StringBuilder();
+            for (String peer : peers) {
+                builder.append(peer).append(",");
+            }
+
+            servers = builder.toString();
+            servers = servers.substring(0, servers.length() - 1);
+
+        } finally {
+            this.snapshot.getWorking().compareAndSet(true, false);
+            this.lock.writeLock().unlock();
+
+        }
+
+
+        try {
+
+            snapshotMetaData.setContent(servers.getBytes());
+            String tmpSnapshotDir = this.snapshot.getSnapshotDir() + File.separator + ".tmp";
+            this.snapshot.updateSnapshotMetaData(tmpSnapshotDir, snapshotMetaData);
+            File snapshotDataDir = new File(this.snapshot.getSnapshotDataDir());
+            if (snapshotDataDir.exists()) {
+                FileUtils.deleteDirectory(snapshotDataDir);
+            }
+            FileUtils.moveDirectory(new File(tmpSnapshotDir), snapshotDataDir);
+            this.snapshot.reload();
+
+        } catch (Exception e) {
+            log.warn("make snapshot fail", e);
+        }
+
 
     }
 
@@ -554,7 +577,7 @@ public class RaftEngine {
             this.lock.readLock().unlock();
         }
         //  请求选举
-        this.electionService.electionVoteRequest(peer, electionRequest, new SimpleElectionVoteResponseHandler(electionRequest));
+        this.raftCoreService.electionVoteRequest(peer, electionRequest, new SimpleElectionVoteResponseHandler(electionRequest));
     }
 
     /***
@@ -817,9 +840,12 @@ public class RaftEngine {
             } else {
 
                 RaftPeer p = new RpcRaftPeer(server);
-                p.registerRaftTransportClient();
                 peerCluster.getPeers().put(server, p);
             }
+        }
+
+        if (StringUtils.equals(this.config.getState(), RaftConfigurationState.CNEW.getName())) {
+            this.config.changeAbort();
         }
         this.config.changeTo(peerCluster);
 
@@ -874,7 +900,7 @@ public class RaftEngine {
             this.executorService.submit(new Runnable() {
                 public void run() {
                     //发送请求
-                    replicationService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request));
+                    raftCoreService.replication(raftPeer, request, nextIndexList, new SimpleReplicationLogResponseHandler(request));
                 }
             });
         }

@@ -2,8 +2,8 @@ package com.tongbanjie.raft.core.peer.support.server.impl;
 
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.constant.RaftConstant;
+import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.enums.RaftCommandType;
-import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.protocol.JoinResponse;
 import com.tongbanjie.raft.core.protocol.LeaveResponse;
@@ -16,10 +16,10 @@ import org.apache.commons.lang.StringUtils;
  */
 public class RaftClientServiceImpl implements RaftClientService {
 
-    private RaftPeer raftPeer;
+    private RaftEngine raftEngine;
 
-    public RaftClientServiceImpl(RaftPeer raftPeer) {
-        this.raftPeer = raftPeer;
+    public RaftClientServiceImpl(RaftEngine raftEngine) {
+        this.raftEngine = raftEngine;
     }
 
     @Override
@@ -29,8 +29,8 @@ public class RaftClientServiceImpl implements RaftClientService {
         JoinResponse joinResponse = new JoinResponse();
 
 
-        String peerId = raftPeer.getId();
-        String leader = this.raftPeer.getRaftEngine().getLeader();
+        String peerId = raftEngine.getId();
+        String leader = this.raftEngine.getLeader();
 
         RaftCommand raftCommand = new RaftCommand();
         raftCommand.setName("Join");
@@ -40,7 +40,7 @@ public class RaftClientServiceImpl implements RaftClientService {
 
         //  eq leader ?
         if (StringUtils.equals(peerId, leader)) {
-            return this.raftPeer.joinCluster(raftCommand);
+            return this.raftEngine.joinCluster(raftCommand);
         } else if (StringUtils.equals(leader, RaftConstant.noLeader)) {
             // not found leader ?
             joinResponse.setReason("has not leader error!");
@@ -48,7 +48,7 @@ public class RaftClientServiceImpl implements RaftClientService {
             joinResponse.setReason(server + " is not leader node error");
         }
 
-//        joinResponse.setReason("操作失败");
+        joinResponse.setReason("操作失败");
         return joinResponse;
 
 
@@ -56,8 +56,8 @@ public class RaftClientServiceImpl implements RaftClientService {
 
     @Override
     public LeaveResponse leaveCluster(String server) {
-        String peerId = raftPeer.getId();
-        String leader = this.raftPeer.getRaftEngine().getLeader();
+        String peerId = raftEngine.getId();
+        String leader = this.raftEngine.getLeader();
 
         RaftCommand raftCommand = new RaftCommand();
         raftCommand.setName("Leave");
@@ -68,7 +68,7 @@ public class RaftClientServiceImpl implements RaftClientService {
         //  eq leader ?
         if (StringUtils.equals(peerId, leader)) {
 
-            return this.raftPeer.leaveCluster(raftCommand);
+            return this.raftEngine.leaveCluster(raftCommand);
 
         } else if (StringUtils.equals(leader, RaftConstant.noLeader)) {
             // not found leader ?

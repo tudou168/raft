@@ -67,7 +67,7 @@ public interface RaftLogService {
 
 
     /**
-     * raft log 列表中最后的索引
+     * raft log 列表中最后的索引commitToIndex
      *
      * @return
      */

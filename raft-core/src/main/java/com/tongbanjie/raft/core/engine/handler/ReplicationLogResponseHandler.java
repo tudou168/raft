@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.replication.handler;
+package com.tongbanjie.raft.core.engine.handler;
 
 import com.tongbanjie.raft.core.engine.NextIndex;
 import com.tongbanjie.raft.core.peer.RaftPeer;
@@ -11,5 +11,12 @@ import com.tongbanjie.raft.core.protocol.ReplicationLogResponseTuple;
  */
 public interface ReplicationLogResponseHandler {
 
+    /**
+     * 日志响应
+     *
+     * @param peer
+     * @param tuple
+     * @param nextIndex
+     */
     void handler(RaftPeer peer, ReplicationLogResponseTuple tuple, NextIndex nextIndex);
 }

@@ -1,9 +1,5 @@
 package com.tongbanjie.raft.test.peer;
 
-import com.tongbanjie.raft.core.builder.RaftPeerBuilder;
-import com.tongbanjie.raft.core.log.codec.support.Crc32RaftLogCodec;
-import com.tongbanjie.raft.core.peer.RaftPeer;
-
 /***
  *
  * @author banxia
@@ -14,16 +10,6 @@ public class PeerBuilderTest {
 
     public static void main(String[] args) {
 
-        String localServer = "127.0.0.1:6001";
-        String servers = "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003";
-        RaftPeerBuilder raftPeerBuilder = new RaftPeerBuilder();
-        RaftPeer raftPeer = raftPeerBuilder
-                .localServer(localServer)
-                .servers(servers)
-                .clientPort(5001)
-                .dataStorePath("./" + localServer)
-                .dataStoreFile("." + localServer + "_raft")
-                .logCodec(new Crc32RaftLogCodec()).builder();
-        raftPeer.bootstrap();
+
     }
 }

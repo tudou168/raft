@@ -24,55 +24,50 @@ import com.tongbanjie.raft.core.transport.proxy.support.JdkTransportClientProxy;
 public class RpcRaftPeer implements RaftPeer {
 
 
-    private RaftEngine raftEngine;
-
-
     private String id;
 
     private String host;
 
     private int port;
 
+    private RaftService raftService;
+
+    private TransportClient client;
+
+
     private long matchIndex;
 
 
-    private TransportClient transportClient;
-
-    private TransportServer transportServer;
-
-    private TransportServer raftClientTransportServer;
-
-    private RaftClientService raftClientService;
-
-    private RaftService raftService;
-
-
-    public RpcRaftPeer(String id) {
-
-        this.id = id;
+    public RpcRaftPeer(String server) {
+        this.id = server;
         String[] split = this.id.split(":");
         this.host = split[0];
         this.port = Integer.valueOf(split[1]);
 
+        NettyClientBuilder<RaftService> nettyClientBuilder = new NettyClientBuilder<RaftService>();
+        this.raftService = nettyClientBuilder.port(this.port)
+                .host(this.host)
+                .serialization(new Hessian2Serialization())
+                .serviceInterface(RaftService.class)
+                .requestTimeout(6000)
+                .transportClientProxy(new JdkTransportClientProxy()).builder();
+        this.client = nettyClientBuilder.getTransportClient();
+
     }
 
-    /**
-     * 启动 peer 引擎
-     *
-     * @return
-     */
-    public boolean bootstrap() {
-        this.raftEngine.bootstrap();
-        return true;
+
+    public RaftService getRaftService() {
+        return raftService;
     }
 
-
-    public RaftEngine getRaftEngine() {
-        return raftEngine;
+    @Override
+    public String getId() {
+        return this.id;
     }
 
-    public void setRaftEngine(RaftEngine raftEngine) {
-        this.raftEngine = raftEngine;
+    @Override
+    public TransportClient getTransportClient() {
+        return this.client;
     }
 
     @Override
@@ -83,164 +78,6 @@ public class RpcRaftPeer implements RaftPeer {
 
     @Override
     public long getMatchIndex() {
-
-        return matchIndex;
+        return this.matchIndex;
     }
-
-
-    public String getId() {
-        return id;
-    }
-
-
-    /**
-     * 发起投票选举
-     *
-     * @param request 投票选举请求体
-     * @return 投票选举响应实体
-     */
-    public ElectionResponse electionVote(ElectionRequest request) {
-
-
-        return this.raftService.electionVote(request);
-    }
-
-    /**
-     * 追加日志
-     *
-     * @param request 追加日志请求体
-     * @return
-     */
-    public AppendEntriesResponse appendEntries(AppendEntriesRequest request) {
-
-        return this.raftService.appendEntries(request);
-
-    }
-
-
-    /**
-     * 选举处理
-     *
-     * @param electionRequest 投票选举请求实体
-     * @return
-     */
-    public ElectionResponse electionVoteHandler(ElectionRequest electionRequest) {
-
-
-        return this.raftEngine.electionVoteHandler(electionRequest);
-
-    }
-
-    /**
-     * 追加日志处理
-     *
-     * @param request 追加日志请求实体
-     * @return
-     */
-    public AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest request) {
-
-        return this.raftEngine.appendEntriesHandler(request);
-    }
-
-
-    /**
-     * 注册 raft client 服务
-     *
-     * @param host       ip
-     * @param clientPort 本地客户端监听端口
-     */
-    @Override
-    public void registerRaftClientTransportServer(String host, Integer clientPort) {
-
-        if (this.raftClientTransportServer == null) {
-
-            NettyServerBuilder<RaftClientService> builder = new NettyServerBuilder<RaftClientService>();
-            this.raftClientTransportServer = builder.port(clientPort)
-                    .host(host)
-                    .ref(new RaftClientServiceImpl(this))
-                    .serialization(new Hessian2Serialization())
-                    .threadNum(Runtime.getRuntime().availableProcessors())
-                    .builder();
-
-        } else if (this.raftClientTransportServer.isClosed()) {
-            this.raftClientTransportServer.open();
-        }
-    }
-
-    /**
-     * 注册 连接 raft 服务客户端
-     */
-    @Override
-    public void registerRaftTransportClient() {
-
-        if (this.transportClient == null) {
-            NettyClientBuilder<RaftService> nettyClientBuilder = new NettyClientBuilder<RaftService>();
-            this.raftService = nettyClientBuilder.port(this.port)
-                    .host(this.host)
-                    .serialization(new Hessian2Serialization())
-                    .serviceInterface(RaftService.class)
-                    .requestTimeout(6000)
-                    .transportClientProxy(new JdkTransportClientProxy()).builder();
-            this.transportClient = nettyClientBuilder.getTransportClient();
-        }
-
-
-    }
-
-    /**
-     * 注册 raft 服务
-     */
-    @Override
-    public void registerRaftTransportServer() {
-
-        if (this.transportServer == null) {
-
-            NettyServerBuilder<RaftService> builder = new NettyServerBuilder<RaftService>();
-            this.transportServer = builder.port(this.port)
-                    .host(host)
-                    .ref(new RaftServiceImpl(this))
-                    .serialization(new Hessian2Serialization())
-                    .threadNum(Runtime.getRuntime().availableProcessors())
-                    .builder();
-        } else if (this.transportServer.isClosed()) {
-            this.transportServer.open();
-        }
-    }
-
-    @Override
-    public void unregisterRaftTransportClient() {
-        if (this.transportClient != null && this.transportClient.isAvailable()) {
-            try {
-
-                this.transportClient.close();
-            } catch (Exception e) {
-
-            }
-        }
-    }
-
-    /**
-     * join the raft cluster
-     *
-     * @param raftCommand join raft cluster body
-     * @return
-     */
-    @Override
-    public JoinResponse joinCluster(RaftCommand raftCommand) {
-
-        return this.raftEngine.joinCluster(raftCommand);
-    }
-
-    /**
-     * 脱离 raft 集群
-     *
-     * @param raftCommand
-     * @return
-     */
-    @Override
-    public LeaveResponse leaveCluster(RaftCommand raftCommand) {
-        return this.raftEngine.leaveCluster(raftCommand);
-    }
-
-
 }

@@ -5,6 +5,7 @@ import com.tongbanjie.raft.core.client.RaftClient;
 import com.tongbanjie.raft.core.client.RaftClientBuilder;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
 import com.tongbanjie.raft.core.protocol.JoinResponse;
+import com.tongbanjie.raft.core.protocol.LeaveResponse;
 import com.tongbanjie.raft.core.transport.builder.NettyClientBuilder;
 import com.tongbanjie.raft.core.transport.netty.serialization.support.Hessian2Serialization;
 import com.tongbanjie.raft.core.transport.proxy.support.JdkTransportClientProxy;
@@ -57,7 +58,7 @@ public class ClientTest {
         RaftClientService raftClientService = nettyClientBuilder.port(port).host(host)
                 .serialization(new Hessian2Serialization())
                 .serviceInterface(RaftClientService.class)
-                .requestTimeout(6000)
+                .requestTimeout(60000)
                 .transportClientProxy(new JdkTransportClientProxy()).builder();
 
 
@@ -69,7 +70,7 @@ public class ClientTest {
     public static void main(String[] args) throws IOException {
 
 
-        args = new String[]{"-server", "192.168.124.40:7001"};
+        args = new String[]{"-server", "192.168.127.36:7001"};
         ClientTest main = new ClientTest(args);
 
         main.run();
@@ -138,12 +139,15 @@ public class ClientTest {
 
         if (cmd.equals("raft:join") && args.length >= 2) {
             System.out.println("Join...");
+            args[1] = "127.0.0.1:6003";
             JoinResponse joinResponse = this.raftClient.joinCluster(args[1]);
             System.out.println(joinResponse.getReason());
             System.exit(1);
         } else if (cmd.equals("raft:leave") && args.length >= 2) {
-            this.raftClient.leaveCluster(args[1]);
+            args[1] = "127.0.0.1:6003";
             System.out.println("Leave...");
+            LeaveResponse leaveResponse = this.raftClient.leaveCluster(args[1]);
+            System.out.println(leaveResponse.getReason());
             System.exit(1);
         } else if (cmd.equals("close")) {
             System.out.println("Closing the raft client...");
