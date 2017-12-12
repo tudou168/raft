@@ -4,10 +4,9 @@ package com.tongbanjie.raft.core.peer;
 import com.tongbanjie.raft.core.cmd.RaftCommand;
 import com.tongbanjie.raft.core.engine.RaftEngine;
 import com.tongbanjie.raft.core.listener.LogApplyListener;
-import com.tongbanjie.raft.core.protocol.AppendEntriesRequest;
-import com.tongbanjie.raft.core.protocol.AppendEntriesResponse;
-import com.tongbanjie.raft.core.protocol.ElectionRequest;
-import com.tongbanjie.raft.core.protocol.ElectionResponse;
+import com.tongbanjie.raft.core.peer.support.server.RaftService;
+import com.tongbanjie.raft.core.protocol.*;
+import com.tongbanjie.raft.core.transport.TransportClient;
 
 /***
  *
@@ -17,61 +16,38 @@ import com.tongbanjie.raft.core.protocol.ElectionResponse;
 public interface RaftPeer {
 
 
+    /**
+     * id
+     *
+     * @return
+     */
     String getId();
 
+    /**
+     * raft 服务
+     *
+     * @return
+     */
+    RaftService getRaftService();
 
-    void setRaftEngine(RaftEngine raftEngine);
+    /**
+     * transport client
+     *
+     * @return
+     */
+    TransportClient getTransportClient();
 
+    /**
+     * match index
+     *
+     * @param matchIndex
+     */
     void setMatchIndex(long matchIndex);
 
+    /**
+     * match index
+     *
+     * @return
+     */
     long getMatchIndex();
-
-    boolean bootstrap();
-
-    //  发起选举投票请求
-    ElectionResponse electionVote(ElectionRequest request);
-
-    /**
-     * 追加日志
-     *
-     * @param request 追加日志请求体
-     * @return
-     */
-    AppendEntriesResponse appendEntries(AppendEntriesRequest request);
-
-    /**
-     * 选举处理
-     *
-     * @param electionRequest
-     * @return
-     */
-    ElectionResponse electionVoteHandler(ElectionRequest electionRequest);
-
-    /**
-     * 追加日志
-     *
-     * @param appendEntriesRequest
-     * @return
-     */
-    AppendEntriesResponse appendEntriesHandler(AppendEntriesRequest appendEntriesRequest);
-
-
-    /**
-     * 执行命令
-     *
-     * @param command
-     * @param applyListener
-     */
-    void commandHandler(RaftCommand command, LogApplyListener applyListener);
-
-
-    void registerRaftClientTransportServer(String host, Integer clientPort);
-
-    void registerRaftTransportClient();
-
-    void registerRaftTransportServer();
-
-    void unregisterRaftTransportClient();
-
-
 }

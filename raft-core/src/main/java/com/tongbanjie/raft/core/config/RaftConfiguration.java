@@ -184,14 +184,12 @@ public class RaftConfiguration {
 
             if (!StringUtils.equals(RaftConfigurationState.COLD.getName(), this.state)) {
 
-                log.warn(String.format("the raft configuration state is not %s", RaftConfigurationState.CNEW.getName()));
-                return;
+                throw new RaftException(String.format("the raft configuration state is not %s", RaftConfigurationState.CNEW.getName()));
             }
 
             if (this.newPeers.size() > 0) {
 
-                log.warn(String.format("the raft configuration new configuration is not empty %s", this.newPeers.getPeers()));
-                return;
+                throw new RaftException(String.format("the raft configuration new configuration is not empty %s", this.newPeers.getPeers()));
             }
 
             this.newPeers = peerCluster;
@@ -209,12 +207,11 @@ public class RaftConfiguration {
     public void commitConfigurationTo() {
 
         this.lock.writeLock().lock();
-
+        log.info(">>>>>>>>>>>>>>> start commit peer config<<<<<<<<<<<<<<");
         try {
 
             if (!StringUtils.equals(this.state, RaftConfigurationState.CNEW.getName())) {
-                log.warn("the raft configuration state is not Cnew state !");
-                return;
+                throw new RaftException("the raft configuration state is not Cnew state !");
             }
 
             if (this.newPeers.size() == 0) {
@@ -222,18 +219,6 @@ public class RaftConfiguration {
                 throw new RaftException("raft configuration new peers is empty !");
             }
 
-            //  destroy all  old Peers client
-            for (RaftPeer peer : oldPeers.explode()) {
-
-                try {
-
-                    peer.unregisterRaftTransportClient();
-
-                } catch (Exception e) {
-                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
-
-                }
-            }
 
             this.oldPeers = this.newPeers;
             this.state = RaftConfigurationState.COLD.getName();
@@ -261,17 +246,17 @@ public class RaftConfiguration {
 
 
             //  destroy all  new peers client
-            for (RaftPeer peer : newPeers.explode()) {
-
-                try {
-
-                    peer.unregisterRaftTransportClient();
-
-                } catch (Exception e) {
-                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
-
-                }
-            }
+//            for (RaftPeer peer : newPeers.explode()) {
+//
+//                try {
+//
+//                    peer.unregisterRaftTransportClient();
+//
+//                } catch (Exception e) {
+//                    log.error(String.format(" peer %s unregisterRemotingClient fail:%s", peer.getId(), e.getMessage()), e);
+//
+//                }
+//            }
 
             this.newPeers = new RaftPeerCluster();
             this.state = RaftConfigurationState.COLD.getName();

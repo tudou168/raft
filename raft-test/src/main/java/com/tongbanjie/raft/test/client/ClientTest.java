@@ -1,8 +1,14 @@
-package com.tongbanjie.raft.core.bootstrap;
+package com.tongbanjie.raft.test.client;
 
+import com.tongbanjie.raft.core.bootstrap.RaftClientMainBootstrap;
 import com.tongbanjie.raft.core.client.RaftClient;
 import com.tongbanjie.raft.core.client.RaftClientBuilder;
 import com.tongbanjie.raft.core.peer.support.server.RaftClientService;
+import com.tongbanjie.raft.core.protocol.JoinResponse;
+import com.tongbanjie.raft.core.protocol.LeaveResponse;
+import com.tongbanjie.raft.core.transport.builder.NettyClientBuilder;
+import com.tongbanjie.raft.core.transport.netty.serialization.support.Hessian2Serialization;
+import com.tongbanjie.raft.core.transport.proxy.support.JdkTransportClientProxy;
 import com.tongbanjie.raft.core.util.NetUtil;
 import jline.console.ConsoleReader;
 
@@ -12,11 +18,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /***
- * raft client main class
+ *
  * @author banxia
- * @date 2017-11-30 15:15:44
+ * @date 2017-12-05 17:17:29
  */
-public class RaftClientMainBootstrap {
+public class ClientTest {
 
     protected static final Map<String, String> commandMap = new HashMap<String, String>();
 
@@ -36,7 +42,7 @@ public class RaftClientMainBootstrap {
 
     }
 
-    public RaftClientMainBootstrap(String[] args) {
+    public ClientTest(String[] args) {
         commandOptions.parseOptions(args);
         System.out.println("Connecting to " + commandOptions.getOption("server"));
         connectToRaftClient(commandOptions.getOption("server"));
@@ -47,18 +53,25 @@ public class RaftClientMainBootstrap {
         String[] split = server.split(":");
         String host = split[0];
         Integer port = Integer.valueOf(split[1]);
-        RaftClientBuilder<RaftClientService> builder = new RaftClientBuilder<RaftClientService>();
-        RaftClientService raftClientService = builder.host(host).port(port).serviceInterface(RaftClientService.class).builder();
-        this.raftClient = new RaftClient(raftClientService, builder.getTransportClient());
-        System.out.println("Connecting to " + server + " success!");
 
+        NettyClientBuilder<RaftClientService> nettyClientBuilder = new NettyClientBuilder<RaftClientService>();
+        RaftClientService raftClientService = nettyClientBuilder.port(port).host(host)
+                .serialization(new Hessian2Serialization())
+                .serviceInterface(RaftClientService.class)
+                .requestTimeout(60000)
+                .transportClientProxy(new JdkTransportClientProxy()).builder();
+
+
+        this.raftClient = new RaftClient(raftClientService, nettyClientBuilder.getTransportClient());
+        System.out.println("Connecting to " + server + " success!");
 
     }
 
     public static void main(String[] args) throws IOException {
 
 
-        RaftClientMainBootstrap main = new RaftClientMainBootstrap(args);
+        args = new String[]{"-server", "192.168.127.36:7001"};
+        ClientTest main = new ClientTest(args);
 
         main.run();
 
@@ -124,14 +137,17 @@ public class RaftClientMainBootstrap {
             System.exit(1);
         }
 
-
         if (cmd.equals("raft:join") && args.length >= 2) {
             System.out.println("Join...");
-            this.raftClient.joinCluster(args[1]);
+            args[1] = "127.0.0.1:6003";
+            JoinResponse joinResponse = this.raftClient.joinCluster(args[1]);
+            System.out.println(joinResponse.getReason());
             System.exit(1);
         } else if (cmd.equals("raft:leave") && args.length >= 2) {
-            this.raftClient.joinCluster(args[1]);
+            args[1] = "127.0.0.1:6003";
             System.out.println("Leave...");
+            LeaveResponse leaveResponse = this.raftClient.leaveCluster(args[1]);
+            System.out.println(leaveResponse.getReason());
             System.exit(1);
         } else if (cmd.equals("close")) {
             System.out.println("Closing the raft client...");
@@ -257,5 +273,4 @@ public class RaftClientMainBootstrap {
             return true;
         }
     }
-
 }

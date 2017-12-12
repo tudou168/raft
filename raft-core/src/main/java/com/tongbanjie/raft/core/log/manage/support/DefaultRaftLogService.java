@@ -337,8 +337,20 @@ public class DefaultRaftLogService implements RaftLogService {
             if (truncateFrom >= this.raftLogs.size()) {
                 return true;
             }
-            this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);
 
+
+            // abort the peer config
+
+            for (int a = truncateFrom; a < this.raftLogs.size(); a++) {
+                RaftLog raftLog = this.raftLogs.get(a);
+                if (raftLog.getType() == RaftLogType.CONFIGURATION.getValue() || raftLog.getType() == RaftLogType.CONFIGURATION.getValue()) {
+                    this.config.changeAbort();
+                }
+
+            }
+
+
+            this.raftLogs = this.raftLogs.subList(0, truncateFrom - 1);
 
         } finally {
             this.lock.unlock();
@@ -354,7 +366,7 @@ public class DefaultRaftLogService implements RaftLogService {
      * @param commitIndex 提交到指定的日志 index
      * @return
      */
-    public boolean commitToIndex(long commitIndex) {
+    public boolean commitToIndex(long commitIndex, boolean isLeader) {
 
         this.lock.lock();
 
@@ -374,6 +386,25 @@ public class DefaultRaftLogService implements RaftLogService {
             }
 
 
+            RaftLog configLog = null;
+            int a = committedPos + 1;
+
+            while (!isLeader && a < this.raftLogs.size()) {
+
+                RaftLog raftLog = this.raftLogs.get(a);
+                if (raftLog.getIndex() > commitIndex) {
+
+                    System.err.println(configLog);
+                    break;
+                }
+                if (this.raftLogs.get(a).getType() == RaftLogType.CONFIGURATION.getValue()) {
+                    configLog = this.raftLogs.get(a);
+                }
+
+                a++;
+            }
+
+
             // 循环提交
             int pos = this.committedPos + 1;
             while (true) {
@@ -390,9 +421,15 @@ public class DefaultRaftLogService implements RaftLogService {
                 byte[] body = this.codec.encode(this.raftLogs.get(pos));
                 this.dataStorage.writeToStore(body);
 
-                // if configuration log
-                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION.getValue()) {
 
+                // if configuration log
+                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION.getValue() && !isLeader) {
+                    if (configLog != null && configLog.getIndex() == raftLogs.get(pos).getIndex() && raftLogs.get(pos).getTerm() == configLog.getTerm()) {
+                        this.config.commitConfigurationTo();
+                    }
+
+                }
+                if (raftLogs.get(pos).getType() == RaftLogType.CONFIGURATION_NEW.getValue() && isLeader) {
                     this.config.commitConfigurationTo();
                 }
                 // apply  listener notify

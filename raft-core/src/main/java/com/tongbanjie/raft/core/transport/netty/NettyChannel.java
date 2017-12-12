@@ -51,6 +51,8 @@ public class NettyChannel implements TransportCaller {
         }
 
         try {
+
+            log.info("connect host:" + nettyClient.getHost() + ",port=" + nettyClient.getPort());
             ChannelFuture channelFuture = this.nettyClient.getBootstrap().connect(this.nettyClient.getHost(), this.nettyClient.getPort()).sync();
             if (channelFuture.isDone() && channelFuture.isSuccess()) {
                 this.channel = channelFuture.channel();
@@ -119,7 +121,7 @@ public class NettyChannel implements TransportCaller {
 
         if (writeFuture.cause() != null) {
 
-            throw new TransportException("NettyChannel send request to server Error");
+            throw new TransportException("NettyChannel send request to server Error", writeFuture.cause());
         } else {
             throw new TransportTimeoutException("NettyChannel send request to server Timeout");
         }

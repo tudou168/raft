@@ -63,11 +63,11 @@ public interface RaftLogService {
      * @param commitIndex 提交到指定的日志 index
      * @return
      */
-    boolean commitToIndex(long commitIndex);
+    boolean commitToIndex(long commitIndex, boolean isLeader);
 
 
     /**
-     * raft log 列表中最后的索引
+     * raft log 列表中最后的索引commitToIndex
      *
      * @return
      */

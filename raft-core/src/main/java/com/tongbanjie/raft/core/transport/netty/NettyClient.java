@@ -126,7 +126,7 @@ public class NettyClient<T> extends AbstractPooledTransportClient {
         this.baseCheck();
 
         initBootstrap();
-        //   init the channel pool
+        // init the channel pool
         this.initPool();
         log.info(String.format("the nettyClient %s:%s open success", host, port));
         this.state = TransportChannelState.ALIVE;

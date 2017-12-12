@@ -30,7 +30,7 @@ public class DefaultDataStorage implements DataStorage {
 
     public DefaultDataStorage(String storePath, String storeFile) {
 
-        this.storePath = storePath;
+        this.storePath = storePath + File.separator + "log";
         this.storeFile = storeFile;
 
         this.createStorePath();

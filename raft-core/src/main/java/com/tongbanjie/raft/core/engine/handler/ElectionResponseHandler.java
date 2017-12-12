@@ -1,4 +1,4 @@
-package com.tongbanjie.raft.core.election.handler;
+package com.tongbanjie.raft.core.engine.handler;
 
 import com.tongbanjie.raft.core.peer.RaftPeer;
 import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
@@ -11,5 +11,11 @@ import com.tongbanjie.raft.core.protocol.ElectionResponseTuple;
 public interface ElectionResponseHandler {
 
 
+    /**
+     * 选举响应
+     *
+     * @param raftPeer
+     * @param tuple
+     */
     void handler(RaftPeer raftPeer, ElectionResponseTuple tuple);
 }

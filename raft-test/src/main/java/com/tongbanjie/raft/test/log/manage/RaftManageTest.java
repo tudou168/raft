@@ -66,7 +66,7 @@ public class RaftManageTest extends BaseTest {
         long lastIndex = this.raftLogService.getLastIndex();
         log.info(">>>>>>>>>>>开始提交日志<<<<<<<<<<<<<<<<<<");
         long commitIndex = lastIndex - 1;
-        this.raftLogService.commitToIndex(commitIndex);
+        this.raftLogService.commitToIndex(commitIndex, true);
         log.info(String.format(">>>>>>>>>>>raft log commitIndex:%s, last index:%s", raftLogService.getLastCommittedIndex(), raftLogService.getLastIndex()));
     }
 
